@@ -1,0 +1,2276 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#05070a">
+<title>หอนาฬิกาตีสิบสาม · THE THIRTEENTH CHIME</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@200;300;400;500;600&family=Noto+Sans+Thai:wght@200;300;400;500;600&family=Charmonman:wght@400;700&family=Itim&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#e8eaee; --dim:#8d97a6; --panel:#0a0d13ee; --line:#1e2733;
+    --accent:#c9a227; --warn:#d9534f; --paper:#e9e4d6;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:#05070a;color:var(--ink);overflow:hidden;
+    font-family:"Noto Sans Thai","Sarabun","Segoe UI",system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  body{user-select:none}
+
+  /* ---------- stage ---------- */
+  #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#05070a}
+  #frame{position:relative;width:100%;max-width:calc(100vh * 16 / 9);aspect-ratio:16/9;
+    max-height:100vh;background:#080b10;overflow:hidden}
+  #sceneimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+    filter:saturate(.82) contrast(1.06) brightness(.94);transition:opacity .45s}
+  #vig{position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 45%,transparent 32%,rgba(0,0,0,.55) 78%,rgba(0,0,0,.88) 100%)}
+  #grain{position:absolute;inset:-50%;pointer-events:none;opacity:.055;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/></filter><rect width='120' height='120' filter='url(%23n)'/></svg>");
+    animation:grain 1.1s steps(4) infinite}
+  @keyframes grain{0%{transform:translate(0,0)}25%{transform:translate(-3%,2%)}
+    50%{transform:translate(2%,-3%)}75%{transform:translate(-2%,-2%)}100%{transform:translate(3%,1%)}}
+  #missing{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;
+    gap:10px;background:linear-gradient(160deg,#0b1017,#05070a 60%,#0d131b);color:#5d6a7b;text-align:center;padding:24px}
+  #missing b{color:#8d97a6;font-size:clamp(15px,2.4vw,22px);letter-spacing:.02em}
+  #missing span{font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+
+  /* ---------- hotspots ---------- */
+  .hs{position:absolute;border-radius:12px;cursor:pointer;transition:.18s;
+    border:1.5px solid transparent;background:transparent}
+  .hs:after{content:"";position:absolute;left:50%;top:50%;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;
+    border-radius:50%;background:#fff;opacity:.34;box-shadow:0 0 12px 3px rgba(255,255,255,.35);
+    animation:pulse 2.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.2;transform:scale(.8)}50%{opacity:.55;transform:scale(1.15)}}
+  .hs.door:after{width:9px;height:9px;background:var(--accent);box-shadow:0 0 14px 4px rgba(143,214,176,.45)}
+  .hs:hover,.hs.reveal{border-color:rgba(255,255,255,.5);background:rgba(255,255,255,.07);
+    box-shadow:inset 0 0 32px rgba(255,255,255,.09)}
+  .hs.door:hover,.hs.door.reveal{border-color:rgba(143,214,176,.65);background:rgba(143,214,176,.09)}
+  .hs .tip{position:absolute;left:50%;top:-6px;transform:translate(-50%,-100%);white-space:nowrap;
+    background:#000c;border:1px solid var(--line);padding:5px 11px;border-radius:8px;font-size:13px;
+    opacity:0;transition:.15s;pointer-events:none;letter-spacing:.01em}
+  .hs:hover .tip,.hs.reveal .tip{opacity:1}
+
+  /* ---------- dialogue ---------- */
+  #say{position:absolute;left:0;right:0;bottom:0;padding:22px clamp(16px,5vw,64px) clamp(20px,4vh,44px);
+    background:linear-gradient(transparent,rgba(3,5,8,.82) 22%,rgba(3,5,8,.96));
+    display:none;cursor:pointer;z-index:20}
+  #saytext{max-width:820px;margin:0 auto;font-size:clamp(15px,1.65vw,19px);line-height:1.85;
+    white-space:pre-wrap;text-shadow:0 2px 14px #000}
+  #saymore{max-width:820px;margin:12px auto 0;font-size:11.5px;letter-spacing:.16em;color:var(--dim);
+    text-transform:uppercase;animation:blink 1.7s infinite}
+  @keyframes blink{0%,100%{opacity:.35}50%{opacity:.9}}
+
+  /* ---------- hud ---------- */
+  #hud{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:8px;
+    padding:10px clamp(10px,2vw,20px);z-index:15;
+    background:linear-gradient(rgba(3,5,8,.78),transparent)}
+  #where{font-size:clamp(11px,1.3vw,13px);letter-spacing:.18em;text-transform:uppercase;color:var(--dim);
+    flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .btn{background:#0c1119cc;border:1px solid var(--line);color:var(--ink);padding:7px 12px;
+    border-radius:9px;font-size:12.5px;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap}
+  .btn:hover{background:#141c28;border-color:#33445a}
+  .btn.badge{position:relative}
+  .btn.badge i{position:absolute;top:-6px;right:-6px;background:var(--accent);color:#04150c;
+    font-style:normal;font-size:10px;font-weight:700;border-radius:9px;padding:1px 5px}
+
+  /* ---------- bag ---------- */
+  #bag{position:absolute;left:0;right:0;bottom:0;display:flex;gap:7px;justify-content:center;
+    padding:9px 12px calc(9px + env(safe-area-inset-bottom));z-index:14;flex-wrap:wrap;
+    background:linear-gradient(transparent,rgba(3,5,8,.72))}
+  .slot{background:#0b1119dd;border:1px solid var(--line);border-radius:9px;padding:6px 11px;
+    font-size:12.5px;cursor:pointer;transition:.15s;color:var(--dim)}
+  .slot:hover{color:var(--ink);border-color:#3a4c63}
+  .slot.on{border-color:var(--accent);color:var(--accent);background:#0e1c17}
+
+  /* ---------- modal ---------- */
+  .mod{position:fixed;inset:0;z-index:76;display:none;align-items:center;justify-content:center;
+    background:rgba(2,4,7,.86);backdrop-filter:blur(7px);padding:16px}
+  .sheet{background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    width:min(760px,100%);max-height:88vh;overflow:auto;padding:clamp(18px,3vw,30px);
+    box-shadow:0 30px 80px #000c}
+  .sheet h2{margin:0 0 4px;font-size:clamp(17px,2.2vw,22px);letter-spacing:.01em}
+  .sheet h3{margin:22px 0 9px;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
+  .row{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:9px}
+  .close{float:right;margin:-6px -6px 0 0}
+  .paper{background:linear-gradient(#f3efe2,#e6e0cf);color:#1e1a13;border-radius:10px;
+    padding:clamp(18px,3vw,30px);white-space:pre-wrap;line-height:1.95;font-size:clamp(14px,1.5vw,16px);
+    box-shadow:inset 0 0 60px rgba(120,100,60,.22);font-family:"Noto Serif Thai",Georgia,serif}
+  .paper b{display:block;font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+    color:#6b5f45;margin-bottom:14px}
+  .card{border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin-bottom:9px;
+    background:#0b1017;cursor:pointer;transition:.15s}
+  .card:hover{border-color:#3a4c63;background:#0f151f}
+  .card.on{border-color:var(--accent);background:#0e1c17}
+  .card.done{border-color:#2d5f45;background:#0a1712}
+  .card b{display:block;margin-bottom:4px;font-size:14.5px}
+  .card small{color:var(--dim);line-height:1.7;font-size:12.8px}
+  .muted{color:var(--dim);font-size:13px;line-height:1.8}
+
+  /* ---------- keypad ---------- */
+  #dial{display:flex;gap:9px;justify-content:center;margin:18px 0}
+  #dial span{width:clamp(42px,10vw,56px);height:clamp(56px,13vw,72px);border:1px solid var(--line);
+    border-radius:11px;display:flex;align-items:center;justify-content:center;
+    font-size:clamp(22px,5vw,30px);background:#080c12;font-variant-numeric:tabular-nums}
+  #pad{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;max-width:290px;margin:0 auto}
+  #pad button{aspect-ratio:1.5;font-size:19px;background:#0c1119;border:1px solid var(--line);
+    color:var(--ink);border-radius:11px;cursor:pointer;font-family:inherit}
+  #pad button:active{background:#182231}
+
+  /* ---------- ranat ---------- */
+  #bars{display:flex;gap:8px;justify-content:center;align-items:flex-end;margin:22px 0;height:150px}
+  #bars i{flex:1;max-width:52px;background:linear-gradient(#6b4a25,#3d2913);border:1px solid #12212e;
+    border-radius:6px;cursor:pointer;transition:.12s;display:block}
+  #bars i:hover{filter:brightness(1.4)}
+  #bars i.hit{filter:brightness(2);transform:translateY(4px)}
+
+  /* ---------- scare ---------- */
+  #scare{position:fixed;inset:0;z-index:90;display:none;background:#000}
+  #scare img{width:100%;height:100%;object-fit:cover;filter:contrast(1.5) saturate(.4) brightness(1.1)}
+  .shake{animation:shk .42s cubic-bezier(.36,.07,.19,.97) both}
+  @keyframes shk{10%,90%{transform:translate3d(-3px,2px,0)}20%,80%{transform:translate3d(6px,-4px,0)}
+    30%,50%,70%{transform:translate3d(-11px,5px,0)}40%,60%{transform:translate3d(11px,-5px,0)}}
+  #flash{position:fixed;inset:0;z-index:91;background:#fff;opacity:0;pointer-events:none}
+
+  /* ---------- toast ---------- */
+  #toast{position:absolute;left:50%;top:64px;transform:translateX(-50%);z-index:30;
+    display:flex;flex-direction:column;gap:7px;align-items:center;pointer-events:none}
+  .tst{background:#0c1119ee;border:1px solid var(--accent);color:var(--accent);padding:9px 17px;
+    border-radius:10px;font-size:13px;animation:tin .35s;box-shadow:0 8px 30px #000a}
+  @keyframes tin{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:none}}
+
+  /* ================= เมนูหลัก (ระบบกลาง SANDOTNIM GAMES) ================= */
+  #title{position:fixed;inset:0;z-index:70;background:#05070a;overflow:hidden;display:block}
+  #tBgWrap{position:absolute;inset:0;will-change:transform}
+  #tBg{position:absolute;inset:0;background:center/cover no-repeat;opacity:0;transition:opacity 1.4s ease}
+  #tBg.on{opacity:1}
+  .tScrim{position:absolute;inset:0;pointer-events:none}
+  .tScrim.a{background:rgba(0,0,0,.14)}
+  .tScrim.v{background:radial-gradient(132% 100% at 62% 38%,transparent 28%,rgba(0,0,0,.82) 100%)}
+  .tScrim.l{background:linear-gradient(95deg,rgba(0,0,0,.80) 0%,rgba(0,0,0,.36) 34%,transparent 60%)}
+  .tScrim.b{background:linear-gradient(0deg,rgba(0,0,0,.68) 0%,transparent 44%)}
+  #tDust{position:absolute;inset:0;pointer-events:none}
+  #tShaft{position:absolute;top:-40%;left:35%;width:60%;height:190%;transform:rotate(16deg);
+    pointer-events:none;mix-blend-mode:screen;filter:blur(26px);
+    background:linear-gradient(90deg,transparent,rgba(201,162,39,.30) 42%,rgba(143,214,176,.12) 52%,transparent)}
+  .tMark{position:absolute;top:26px;left:7%;display:flex;align-items:center;gap:9px;z-index:3;
+    font-size:10px;letter-spacing:.35em;color:var(--dim)}
+  .tMark i{width:16px;height:1px;background:var(--accent);display:block}
+  .tBrand{position:absolute;top:11%;left:7%;right:7%}
+  .tPlate{position:absolute;inset:-40px -90px -50px -70px;pointer-events:none;filter:blur(26px);
+    background:radial-gradient(closest-side at 22% 50%,rgba(0,0,0,.5),rgba(0,0,0,.22) 55%,transparent 82%)}
+  #title h1{position:relative;margin:0;font-family:"Noto Serif Thai",Georgia,serif;font-weight:600;
+    font-size:clamp(34px,5.2vw,66px);line-height:.98;letter-spacing:4px;
+    text-shadow:0 2px 6px rgba(0,0,0,.72),0 8px 44px rgba(0,0,0,.8);
+    opacity:0;transform:translateY(14px);transition:1s cubic-bezier(.16,1,.3,1) .3s}
+  #title p{position:relative;margin:14px 0 0;color:#ffffffc4;font-weight:300;text-transform:none;
+    font-size:clamp(9px,.94vw,12px);letter-spacing:.42em;line-height:1.7;max-width:620px;
+    text-shadow:0 2px 14px rgba(0,0,0,.8);
+    opacity:0;transform:translateY(14px);transition:1s cubic-bezier(.16,1,.3,1) .42s}
+  .tHair{position:relative;margin-top:34px;width:0;height:1px;background:var(--accent);
+    box-shadow:0 0 10px var(--accent);transition:width 1.4s cubic-bezier(.16,1,.3,1) .85s}
+  #title.ready h1,#title.ready p{opacity:1;transform:none}
+  #title.ready .tHair{width:130px}
+  #tNav{position:absolute;bottom:17%;left:7%;display:flex;flex-direction:column;align-items:flex-start;gap:7px}
+  .titem{position:relative;background:none;border:0;cursor:pointer;padding:2px 0;text-align:left;
+    font-family:"Noto Serif Thai",Georgia,serif;font-weight:300;color:#ffffffab;
+    font-size:clamp(15px,1.9vw,24.5px);letter-spacing:2px;
+    text-shadow:0 2px 5px rgba(0,0,0,.72),0 6px 26px rgba(0,0,0,.8);
+    opacity:0;transform:translateX(-12px);
+    transition:color .26s,transform .34s cubic-bezier(.16,1,.3,1),opacity .6s,letter-spacing .26s}
+  .titem.in{opacity:1;transform:none}
+  .titem::before{content:"";position:absolute;left:-20px;top:50%;width:0;height:1px;
+    background:var(--accent);box-shadow:0 0 12px var(--accent);
+    transition:width .3s cubic-bezier(.16,1,.3,1)}
+  .titem:hover{color:#fff;transform:translateX(5px);letter-spacing:3px}
+  .titem:hover::before{width:12px}
+
+  #hint{position:absolute;right:12px;bottom:calc(58px + env(safe-area-inset-bottom));z-index:16}
+  #dev{position:fixed;left:6px;bottom:6px;color:#0f0;font:11px monospace;z-index:99;display:none}
+  @media (max-width:640px){
+    #saytext{font-size:15px;line-height:1.8}
+    .btn{padding:7px 10px;font-size:12px}
+    #where{letter-spacing:.1em}
+  }
+  /* ================= สมุดคดี — แฟ้ม 3 มิติ ================= */
+  #mCase{padding:0;background:rgba(2,4,7,.9)}
+  .dwrap{position:absolute;inset:0;display:grid;grid-template-columns:minmax(250px,29%) 1fr;
+    align-items:center;padding:0 5%;gap:10px}
+  @media(max-width:900px){.dwrap{grid-template-columns:1fr;grid-template-rows:auto 1fr;padding:3vh 5%}}
+  .dside{padding-right:26px}
+  .dside h2{margin:0;font-family:"Noto Serif Thai",Georgia,serif;font-weight:500;
+    font-size:clamp(22px,3vw,38px);letter-spacing:.06em;text-shadow:0 4px 30px #000}
+  .dcap{margin-top:.6em;font-size:11px;letter-spacing:.4em;color:var(--dim)}
+  .dhair{margin-top:1.1em;width:clamp(56px,8vw,105px);height:1px;background:var(--accent);
+    box-shadow:0 0 10px var(--accent)}
+  .dcount{margin-top:22px;font-size:12px;letter-spacing:.18em;color:var(--dim)}
+  .dcount b{color:var(--accent);font-weight:500}
+  .dinfo{margin-top:18px;min-height:180px}
+  .dinfo .n{font-size:11px;letter-spacing:.32em;color:var(--accent);margin-bottom:7px}
+  .dinfo h3{margin:0 0 10px;font-family:"Noto Serif Thai",Georgia,serif;font-weight:500;
+    font-size:clamp(16px,1.9vw,23px)}
+  .dinfo p{margin:0;font-size:clamp(12px,1vw,14px);color:var(--dim);line-height:1.95;max-width:400px}
+  .dinfo .e{color:#ffffff52;font-size:12.5px;line-height:1.9;max-width:380px}
+  .dhints{margin-top:26px;display:flex;flex-wrap:wrap;gap:9px 20px}
+  .dhint{display:flex;align-items:center;gap:9px;font-size:11.5px;color:var(--dim)}
+  .dhint b{font-weight:500;font-size:10px;letter-spacing:.1em;color:var(--ink);
+    border:1px solid #ffffff26;padding:5px 9px;min-width:38px;text-align:center}
+  .dcloseb{position:absolute;left:5%;bottom:6%;font-size:12.5px;letter-spacing:.18em;color:var(--dim);
+    background:none;border:0;cursor:pointer;display:flex;align-items:center;gap:10px;z-index:8;font-family:inherit}
+  .dcloseb:hover{color:var(--accent)}
+  .dcloseb i{width:20px;height:1px;background:currentColor;transition:width .25s}
+  .dcloseb:hover i{width:30px}
+
+  .dstage{perspective:1900px;perspective-origin:52% 46%;display:flex;align-items:center;
+    justify-content:center;height:100%}
+  .dbook{position:relative;width:min(56vw,690px);aspect-ratio:1.42/1;transform-style:preserve-3d;cursor:grab;
+    touch-action:none}
+  .dbook.grab{cursor:grabbing}
+  .dboard{position:absolute;top:0;height:100%;width:50%;transform-style:preserve-3d;
+    background:linear-gradient(160deg,#c2a878,#a2895a);box-shadow:inset 0 0 60px #00000038}
+  .dboard.l{left:0;opacity:0;transition:opacity .7s ease .35s;border-radius:8px 2px 2px 8px;
+    transform:translateZ(-30px) rotateY(2.5deg);transform-origin:right center}
+  .dboard.r{right:0;border-radius:2px 8px 8px 2px;
+    transform:translateZ(-30px) rotateY(-2.5deg);transform-origin:left center}
+  .dspine{opacity:0;transition:opacity .7s ease .35s;position:absolute;left:50%;top:-1%;height:102%;
+    width:30px;transform:translateX(-50%) translateZ(-34px);pointer-events:none;
+    background:linear-gradient(90deg,#00000000,#0000005e 42%,#0000005e 58%,#00000000)}
+  .dbook.opened .dboard.l,.dbook.opened .dspine{opacity:1}
+
+  #dSheets{position:absolute;inset:0;transform-style:preserve-3d}
+  .dsheet{position:absolute;top:0;right:0;width:50%;height:100%;
+    transform-origin:left center;transform-style:preserve-3d}
+  .dpaper{position:absolute;inset:0;transform-origin:right center;transform-style:preserve-3d}
+  .dface{position:absolute;inset:0;backface-visibility:hidden;transform-style:preserve-3d;
+    background:linear-gradient(150deg,#f1e9d8,#e2d7be);
+    box-shadow:inset 0 0 46px #6a5a3a2e,0 10px 26px #00000047}
+  .dface.f{border-radius:2px 7px 7px 2px;
+    background-image:linear-gradient(90deg,#00000024,transparent 7%),linear-gradient(150deg,#f1e9d8,#e2d7be)}
+  .dface.b{transform:rotateY(180deg);border-radius:7px 2px 2px 7px;
+    background-image:linear-gradient(270deg,#00000024,transparent 7%),linear-gradient(150deg,#f1e9d8,#e2d7be)}
+  .dgloss{position:absolute;inset:0;pointer-events:none;opacity:0;border-radius:inherit;
+    mix-blend-mode:overlay;z-index:9}
+
+  .dcover{position:absolute;top:-1.5%;right:0;width:50.5%;height:103%;transform:translateZ(30px);
+    transform-origin:left center;transform-style:preserve-3d;
+    transition:transform 1.15s cubic-bezier(.55,.05,.25,1)}
+  .dcover.open{transform:translateZ(-60px) rotateY(-176deg);pointer-events:none}
+  .dcf{position:absolute;inset:0;backface-visibility:hidden}
+  .dcf.f{border-radius:3px 10px 10px 3px;background:linear-gradient(155deg,#cdb27b,#967c4b);
+    box-shadow:0 30px 70px #000000ad,inset 0 0 70px #00000030;
+    display:flex;flex-direction:column;justify-content:center;padding:11% 12%}
+  .dcf.b{transform:rotateY(180deg);border-radius:10px 3px 3px 10px;
+    background:linear-gradient(155deg,#b19766,#856f44);box-shadow:inset 0 0 70px #00000042}
+  .dlabel{position:relative;background:#f2ead6;padding:16px 20px;box-shadow:0 6px 18px #00000045;
+    transform:rotate(-1.1deg);max-width:82%}
+  .dlabel .t{font-family:"Noto Serif Thai",Georgia,serif;font-size:clamp(14px,1.6vw,21px);
+    color:#23262c;font-weight:600;letter-spacing:.03em;line-height:1.35}
+  .dlabel .s{white-space:nowrap;margin-top:7px;font-size:9.5px;letter-spacing:.3em;color:#6d6a60}
+  .dstamp{position:absolute;right:9%;bottom:11%;border:3px solid #b6473c8c;color:#b6473cd6;
+    font-family:"Noto Serif Thai",Georgia,serif;font-weight:600;font-size:clamp(10px,1.1vw,14px);
+    padding:7px 14px;transform:rotate(-9deg);letter-spacing:.1em}
+  .dhintopen{position:absolute;left:0;right:0;bottom:-42px;text-align:center;font-size:11.5px;
+    letter-spacing:.22em;color:#ffffff8f;animation:dpuls 2.6s ease-in-out infinite}
+  @keyframes dpuls{50%{opacity:.42}}
+
+  .dpg{position:absolute;inset:0;padding:7.5% 8%;transform-style:preserve-3d}
+  .dpg h5{margin:0;font-family:"Noto Serif Thai",Georgia,serif;font-size:clamp(10px,1.1vw,14px);
+    color:#3a3a34;letter-spacing:.16em;border-bottom:1px solid #00000024;padding-bottom:7px;font-weight:500}
+  .dslot{position:absolute;transform-style:preserve-3d;cursor:pointer;
+    transform:translateZ(var(--z,5px)) rotate(var(--r,0deg));
+    transition:transform .5s cubic-bezier(.16,1,.3,1)}
+  .dslot::after{content:"";position:absolute;inset:3px;background:#20180c;opacity:.36;
+    filter:blur(9px);border-radius:2px;transform:translateZ(-7px) translate(6px,10px);
+    transition:transform .5s cubic-bezier(.16,1,.3,1),opacity .5s,filter .5s}
+  .dslot:hover{transform:translateZ(30px) rotate(var(--r,0deg)) scale(1.02)}
+  .dslot:hover::after{opacity:.44;filter:blur(20px);transform:translateZ(-30px) translate(15px,25px)}
+  .dslot.sel{transform:translateZ(52px) rotate(var(--r,0deg)) scale(1.05)}
+  .dslot.sel .ddoc{box-shadow:0 0 0 2px var(--accent),0 0 22px rgba(201,162,39,.55)}
+  .ddoc{position:relative;background:#fdfaf1;padding:7px 7px 24px;
+    box-shadow:inset 1.5px 1.5px 0 #ffffffe0,0 1px 0 #cbbfa4,0 2px 0 #b9ad92;transition:box-shadow .25s}
+  .ddoc img{display:block;width:100%;aspect-ratio:1.2/1;object-fit:cover;background:#242830}
+  .dlab{position:absolute;left:0;right:0;bottom:3px;text-align:center;padding:0 7px;
+    font-family:"Charmonman",cursive;font-size:clamp(8.5px,.88vw,12px);color:#2a2f38;line-height:1.15}
+  .dtab{position:absolute;top:-7px;right:-7px;background:#b6473c;color:#fff2e8;
+    font-family:"Noto Serif Thai",Georgia,serif;font-size:clamp(8px,.8vw,11px);padding:2px 7px;
+    transform:translateZ(2px) rotate(3deg);letter-spacing:.06em}
+  .dtape{position:absolute;width:52px;height:17px;background:#e9e0c17d;transform-style:preserve-3d;
+    box-shadow:0 1px 3px #0000002e,inset 0 0 0 1px #ffffff2e;
+    top:-8px;left:50%;transform:translateX(-50%) translateZ(3px) rotate(-2deg)}
+  .dnote{background:#faf6ea;padding:11px 13px;border-left:3px solid #b6473c5e;
+    box-shadow:inset 1px 1px 0 #fffffff0,0 1px 0 #ccc0a6;
+    font-family:"Charmonman",cursive;font-size:clamp(9px,.95vw,12.5px);color:#3f4a57;line-height:1.55}
+  .dsticky{background:#f4e388;padding:10px 12px;box-shadow:inset 0 -14px 18px -14px #00000026,0 1px 0 #d8c96f;
+    font-family:"Itim",cursive;font-size:clamp(9px,.92vw,12px);color:#4a3f1c;line-height:1.5}
+  .dtyped{font-family:"Noto Sans Thai",sans-serif;font-size:clamp(8px,.85vw,11px);color:#3d4550;line-height:1.9}
+  .dcardp{background:#fbf7ec;padding:9px 11px;box-shadow:inset 1px 1px 0 #fffffff0,0 1px 0 #ccc0a6;
+    display:flex;gap:9px;align-items:flex-start;overflow:hidden}
+  .dcardp .tx{min-width:0}
+  .dcardp img{width:34%;aspect-ratio:1/1.1;object-fit:cover;background:#242830;flex:none}
+  .dcardp .tx b{display:block;font-family:"Noto Serif Thai",Georgia,serif;font-size:clamp(9px,.95vw,12.5px);
+    color:#23262c;margin-bottom:3px}
+  .dcardp .tx small{font-family:"Noto Sans Thai",sans-serif;font-size:clamp(7.5px,.78vw,10px);
+    color:#5c6470;line-height:1.55;display:-webkit-box;-webkit-line-clamp:4;
+    -webkit-box-orient:vertical;overflow:hidden}
+  .dconc{background:#f7f2e3;padding:11px 13px;box-shadow:inset 1px 1px 0 #fffffff0,0 1px 0 #ccc0a6;
+    border-top:3px solid #2d5f4566}
+  .dconc b{display:block;font-family:"Noto Serif Thai",Georgia,serif;color:#1f3a2c;
+    font-size:clamp(9px,.95vw,12.5px);margin-bottom:4px}
+  .dconc small{font-family:"Noto Sans Thai",sans-serif;font-size:clamp(7.5px,.78vw,10px);
+    color:#4b5560;line-height:1.7;display:block}
+  .dlock{border:1.5px dashed #0000003d;background:#0000000a;display:flex;align-items:center;
+    justify-content:center;color:#00000030;font-family:"Noto Serif Thai",Georgia,serif;
+    font-size:clamp(11px,1.3vw,17px);cursor:default;--z:0px;letter-spacing:.2em}
+  .dlock::after{display:none}
+  .dlock:hover{transform:translateZ(0) rotate(var(--r,0deg))}
+  .dclip{position:absolute;width:13px;height:39px;border:3px solid #939aa2;border-radius:9px;
+    box-shadow:0 3px 6px #00000047;transform:translateZ(7px)}
+  .dclip.dark{border-color:#41464e}
+  .dnavwrap{position:absolute;inset:0;pointer-events:none;z-index:60;opacity:0;transition:opacity .6s ease .5s}
+  .dbook.opened .dnavwrap{opacity:1}
+  .dnav{pointer-events:auto;position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;
+    border:1px solid #ffffff26;color:var(--dim);display:flex;align-items:center;justify-content:center;
+    font-size:17px;background:#0b0d1166;backdrop-filter:blur(6px);transition:.2s;cursor:pointer;font-family:inherit}
+  .dnav:hover{border-color:var(--accent);color:var(--accent)}
+  .dnav[disabled]{opacity:.2;cursor:not-allowed}
+  .dnav.prev{left:-66px}.dnav.next{right:-66px}
+  @media(max-width:900px){.dnav.prev{left:-6px}.dnav.next{right:-6px}}
+  .dpageno{position:absolute;left:0;right:0;bottom:-44px;text-align:center;font-size:10.5px;
+    letter-spacing:.26em;color:#ffffff70}
+
+  /* ================= หน้าโหลด (หลังกดเริ่มเกม) ================= */
+  #load{position:fixed;inset:0;z-index:72;display:none;background:#05070a;overflow:hidden}
+  #load.on{display:block}
+  #lBgWrap{position:absolute;inset:0;will-change:transform}
+  #lBg{position:absolute;inset:0;background:center/cover no-repeat;opacity:0;transition:opacity 1s}
+  #lBg.on{opacity:1}
+  #load .sc{position:absolute;inset:0;pointer-events:none}
+  #load .sc.v{background:radial-gradient(132% 100% at 60% 40%,transparent 26%,rgba(0,0,0,.86) 100%)}
+  #load .sc.b{background:linear-gradient(0deg,rgba(0,0,0,.82) 0%,transparent 48%)}
+  #load .wrap{position:absolute;left:7%;right:7%;bottom:12%}
+  #load .gname{font-family:"Noto Serif Thai",Georgia,serif;font-weight:400;letter-spacing:.08em;
+    font-size:clamp(18px,2.4vw,30px);text-shadow:0 4px 30px #000}
+  #load .tip{margin-top:1.5em;font-size:clamp(12px,1.1vw,15px);color:var(--dim);max-width:540px;
+    line-height:1.8;min-height:3.6em;transition:opacity .5s;text-shadow:0 2px 16px #000}
+  #load .barwrap{margin-top:2.1em;display:flex;align-items:center;gap:16px;max-width:520px}
+  #load .bar{flex:1;height:1px;background:#ffffff24;position:relative;overflow:hidden}
+  #load .bar span{position:absolute;inset:0 auto 0 0;width:0%;background:var(--accent);
+    box-shadow:0 0 12px var(--accent);transition:width .25s linear}
+  #load .pct{font-size:12px;letter-spacing:.14em;color:var(--dim);min-width:40px;text-align:right;
+    font-variant-numeric:tabular-nums}
+
+  /* ================= มือถือ ================= */
+  #mob{display:none}
+  @media (orientation:portrait) and (max-width:820px){
+    #stage{flex-direction:column;align-items:stretch;justify-content:flex-start;overflow-y:auto}
+    #frame{width:100%;max-width:none;max-height:none;flex:none}
+    #mob{display:flex;flex-direction:column;gap:11px;flex:1;background:#05070a;
+         padding:15px 14px calc(20px + env(safe-area-inset-bottom))}
+    #mob #say{position:static;padding:0;background:none;order:1;display:none}
+    #mob #saytext{font-size:16.5px;line-height:1.9;max-width:none;text-shadow:none}
+    #mob #saymore{margin:11px 0 0;text-align:right;max-width:none}
+    #mob #bag{position:static;order:4;padding:0;background:none;justify-content:flex-start}
+    #mob .slot{padding:11px 15px;font-size:14px}
+    #mob #hud{position:static;order:5;flex-wrap:wrap;padding:0;background:none;gap:8px;margin-top:2px}
+    #mob #where{flex:1 0 100%;font-size:12px;letter-spacing:.24em;margin-bottom:3px}
+    #mob .btn{padding:12px 14px;font-size:14px;flex:1;min-width:86px;text-align:center}
+    #mob #bSet{flex:0 0 58px;min-width:0}
+    #mob #bLang{flex:0 0 88px;min-width:0}
+    /* ปุ่ม "แสดงจุดที่กดได้" ยังต้องมีในโหมดง่าย — กระเป๋าย้ายลงแผงแล้วเลยเลื่อนลงได้ */
+    #hint{bottom:8px;right:8px;padding:6px 10px;font-size:11.5px}
+    #hots .tip{font-size:10.5px;padding:3px 7px}
+    .titem{padding:11px 0;font-size:19px;letter-spacing:1.6px}
+    #tMenu{gap:2px}
+    .mpCard input{font-size:16px}
+    .sheet,.paper{font-size:15.5px}
+  }
+  /* มือถือแนวนอน — จอเตี้ย บีบทุกอย่างให้พอดี */
+  @media (orientation:landscape) and (max-height:520px){
+    #frame{max-height:100vh}
+    .btn{padding:6px 10px;font-size:12px}
+    #say{padding:14px 5vw 15px}
+    #saytext{font-size:15px;line-height:1.72}
+    #bag{padding:7px 10px calc(7px + env(safe-area-inset-bottom))}
+    .slot{padding:5px 10px;font-size:12px}
+  }
+  /* ---- แฟ้มคดีบนมือถือแนวตั้ง: แฟ้มอยู่บน ข้อความอยู่ล่าง เลื่อนอ่านได้ ---- */
+  @media (orientation:portrait) and (max-width:820px){
+    .dwrap{display:flex;flex-direction:column;align-items:stretch;gap:10px;
+      padding:14px 16px calc(72px + env(safe-area-inset-bottom));overflow-y:auto}
+    .dstage{order:1;flex:none;height:auto;padding:14px 0 46px;
+      perspective:1500px;perspective-origin:50% 50%}
+    .dbook{width:min(80vw,360px)}
+    .dside{order:2;padding:0}
+    .dside h2{font-size:22px}
+    .dcount{margin-top:14px}
+    .dinfo{min-height:0;margin-top:14px}
+    .dinfo p,.dinfo .e{max-width:none}
+    .dhints{margin-top:18px;gap:8px 16px}
+    .dcloseb{left:16px;bottom:calc(16px + env(safe-area-inset-bottom))}
+    .dlabel{padding:9px 11px;max-width:88%}
+    .dlabel .t{font-size:12px;line-height:1.3}
+    .dlabel .s{font-size:7px;letter-spacing:.16em;white-space:normal}
+    .dstamp{font-size:9px;padding:4px 8px;border-width:2px}
+    .dhintopen{bottom:-30px;font-size:10.5px;letter-spacing:.16em}
+    .dnav{width:46px;height:46px}
+    .ddoc,.dcardp{font-size:12.5px}
+    .dcf.f{padding:9% 9%;overflow:hidden}
+    /* ตอนแฟ้มยังปิด ปกอยู่ครึ่งขวาของกล่อง เลื่อนเข้ามาให้ดูอยู่กลางจอ */
+    .dstage{transition:transform .9s cubic-bezier(.55,.05,.25,1)}
+    .dstage:has(.dbook:not(.opened)){transform:translateX(-12%)}
+  }
+  @media (orientation:landscape) and (max-height:520px){
+    .dbook{width:min(46vw,430px)}
+    .dside h2{font-size:20px}
+    .dinfo{min-height:0}
+    .dhints{margin-top:12px}
+  }
+
+  /* ---------- เลือกโหมดยาก-ง่าย ---------- */
+  .mdopt{display:block;width:100%;text-align:left;background:#0c1119;border:1px solid var(--line);
+    border-radius:13px;padding:17px 19px;margin-bottom:11px;cursor:pointer;font-family:inherit;
+    color:var(--ink);transition:.16s}
+  .mdopt:hover{border-color:var(--accent);background:#101a24}
+  .mdopt:active{transform:scale(.99)}
+  .mdopt b{display:block;font-family:"Noto Serif Thai",Georgia,serif;font-weight:500;
+    font-size:18px;margin-bottom:5px}
+  .mdopt span{display:block;font-size:12.5px;color:var(--dim);line-height:1.75}
+  @media (max-width:820px){.mdopt{padding:19px 17px}.mdopt b{font-size:17px}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div id="frame">
+    <img id="sceneimg" alt="">
+    <div id="missing"><b></b><span></span></div>
+    <div id="vig"></div><div id="grain"></div>
+    <div id="hots"></div>
+    <div id="toast"></div>
+
+    <div id="hud">
+      <div id="where"></div>
+      <button class="btn badge" id="bBag"></button>
+      <button class="btn badge" id="bCase"></button>
+      <button class="btn" id="bLang">TH / EN</button>
+      <button class="btn" id="bSet">⚙</button>
+    </div>
+
+    <button class="btn" id="hint"></button>
+    <div id="bag"></div>
+
+    <div id="say"><div id="saytext"></div><div id="saymore"></div></div>
+  </div>
+  <div id="mob"></div>
+</div>
+
+<div class="mod" id="mMode"><div class="sheet" style="max-width:520px">
+  <h3 style="margin:0 0 6px;font-family:'Noto Serif Thai',Georgia,serif;font-weight:500;font-size:21px">
+    เลือกระดับความยาก</h3>
+  <div style="font-size:11px;letter-spacing:.34em;color:var(--dim);margin-bottom:20px">DIFFICULTY</div>
+  <button class="mdopt" id="mdEasy">
+    <b>ง่าย</b><span>มีเส้นบอกว่าตรงไหนกดได้ · เหมาะกับเล่นครั้งแรก หรือเล่นกับเพื่อนหลายคน</span>
+  </button>
+  <button class="mdopt" id="mdHard">
+    <b>ยาก</b><span>ไม่บอกอะไรเลย ต้องกวาดสายตาหาเอง · บรรยากาศเต็ม ๆ</span>
+  </button>
+  <div style="margin-top:15px;font-size:11.5px;color:#6f7787;line-height:1.8">
+    เปลี่ยนทีหลังได้ที่หน้าตั้งค่า</div>
+</div></div>
+<div class="mod" id="mNote"><div class="sheet"><div class="paper" id="noteBody"></div>
+  <div class="row" style="margin-top:16px;justify-content:flex-end"><button class="btn" data-close>OK</button></div></div></div>
+
+<div class="mod" id="mCase"><div class="dwrap">
+  <div class="dside">
+    <h2 id="caseT"></h2>
+    <div class="dcap">CASE FILE</div>
+    <div class="dhair"></div>
+    <div class="dcount" id="dCount"></div>
+    <div class="dinfo" id="dInfo"></div>
+    <div class="dhints">
+      <div class="dhint"><b id="dK1">คลิก</b><span id="dH1">หยิบขึ้นมาดู</span></div>
+      <div class="dhint"><b id="dK2">ลาก</b><span id="dH2">หมุนแฟ้ม</span></div>
+      <div class="dhint"><b>← →</b><span id="dH3">พลิกหน้า</span></div>
+    </div>
+  </div>
+  <div class="dstage">
+    <div class="dbook" id="dBook">
+      <div class="dboard l"><div class="dpg" id="dPgL"></div></div>
+      <div class="dboard r"><div class="dpg" id="dPgR"></div></div>
+      <div class="dspine"></div>
+      <div id="dSheets"></div>
+      <div class="dcover" id="dCover">
+        <div class="dcf f">
+          <div class="dlabel"><div class="t" id="dCovT"></div><div class="s" id="dCovS"></div></div>
+          <div class="dstamp" id="dCovStamp"></div>
+        </div>
+        <div class="dcf b"></div>
+      </div>
+      <div class="dnavwrap">
+        <button class="dnav prev" id="dPrev">&lsaquo;</button>
+        <button class="dnav next" id="dNext">&rsaquo;</button>
+      </div>
+      <div class="dhintopen" id="dHintOpen"></div>
+      <div class="dpageno" id="dPageNo"></div>
+    </div>
+  </div>
+  <button class="dcloseb" id="dClose"><i></i><span id="dCloseT"></span></button>
+</div></div>
+
+<div class="mod" id="mBag"><div class="sheet">
+  <button class="btn close" data-close>✕</button>
+  <h2 id="bagT"></h2><div id="bagBody"></div>
+</div></div>
+
+<div class="mod" id="mCode"><div class="sheet" style="max-width:420px;text-align:center">
+  <button class="btn close" data-close>✕</button>
+  <h2 id="codeT"></h2>
+  <p class="muted" id="codeP" style="text-align:left"></p>
+  <div id="dial"></div>
+  <div id="pad"></div>
+  <p class="muted" id="codeMsg" style="min-height:22px;margin-top:14px"></p>
+</div></div>
+
+<div class="mod" id="mRanat"><div class="sheet" style="max-width:560px;text-align:center">
+  <button class="btn close" data-close>✕</button>
+  <h2 id="ranatT"></h2>
+  <p class="muted" id="ranatP"></p>
+  <div id="bars"></div>
+  <p class="muted" id="ranatMsg" style="min-height:22px"></p>
+</div></div>
+
+<div class="mod" id="mSet"><div class="sheet" style="max-width:460px">
+  <button class="btn close" data-close>✕</button>
+  <h2 id="setT"></h2><div id="setBody"></div>
+</div></div>
+
+<div class="mod" id="mCloseup"><div class="sheet" style="max-width:900px;padding:10px;background:#05070a">
+  <img id="cuImg" style="width:100%;border-radius:11px;display:block" alt="">
+  <div class="row" style="margin:12px 0 2px;justify-content:flex-end"><button class="btn" data-close>OK</button></div>
+</div></div>
+
+<div class="mod" id="mAccuse"><div class="sheet" style="max-width:520px">
+  <h2 id="accT"></h2><p class="muted" id="accP"></p><div id="accBody"></div>
+</div></div>
+
+<div class="mod" id="mEnd"><div class="sheet">
+  <img id="endImg" alt="" style="width:100%;border-radius:11px;display:none;margin-bottom:14px">
+  <h2 id="endT"></h2><div class="paper" id="endBody" style="margin-top:14px"></div>
+  <div id="endStats" class="muted" style="margin-top:14px"></div>
+  <div class="row" style="margin-top:16px;justify-content:flex-end"><button class="btn" id="bAgain"></button></div>
+</div></div>
+
+<div id="scare"><img id="scareImg" alt=""></div>
+<div id="flash"></div>
+
+<div id="title">
+  <div id="tBgWrap"><div id="tBg"></div></div>
+  <div class="tScrim a"></div><div class="tScrim v"></div>
+  <div class="tScrim l"></div><div class="tScrim b"></div>
+  <div id="tShaft"></div><canvas id="tDust"></canvas>
+  <div class="tMark"><i></i>SANDOTNIM GAMES</div>
+  <div class="tBrand">
+    <div class="tPlate"></div>
+    <h1 id="tTitle"></h1>
+    <p id="tSub"></p>
+    <div class="tHair"></div>
+  </div>
+  <nav id="tNav">
+    <button class="titem" id="tNew"></button>
+    <button class="titem" id="tCont" style="display:none"></button>
+    <button class="titem" id="tHow"></button>
+    <button class="titem" id="tSet"></button>
+  </nav>
+  <button id="tLang" style="display:none"></button>
+</div>
+<div id="load">
+  <div id="lBgWrap"><div id="lBg"></div></div>
+  <div class="sc v"></div><div class="sc b"></div>
+  <div class="wrap">
+    <div class="gname" id="lName"></div>
+    <div class="tip" id="lTip"></div>
+    <div class="barwrap"><div class="bar"><span id="lBar"></span></div><div class="pct" id="lPct">0%</div></div>
+  </div>
+</div>
+<div id="dev"></div>
+
+<script type="module">
+/* ===== strings.js ===== */
+// หอนาฬิกาตีสิบสาม / THE THIRTEENTH CHIME — every player-visible UI string lives here.
+
+const STR = {
+  title:        { th: "หอนาฬิกาตีสิบสาม",       en: "THE THIRTEENTH CHIME" },
+  subtitle:     { th: "มหาวิทยาลัย · หอสมุดชั้นสอง · 00:00 น.",
+                  en: "The university · library, second floor · 00:00" },
+  btnNew:       { th: "เริ่ม",                  en: "Begin" },
+  btnContinue:  { th: "เล่นต่อ",               en: "Continue" },
+  btnHowTo:     { th: "วิธีเล่น",              en: "How to play" },
+  btnSettings:  { th: "ตั้งค่า",               en: "Settings" },
+  btnBack:      { th: "ย้อนกลับ",              en: "Back" },
+  btnClose:     { th: "ปิด",                   en: "Close" },
+  btnOk:        { th: "ตกลง",                  en: "OK" },
+  btnCancel:    { th: "ยกเลิก",                en: "Cancel" },
+
+  howToBody: {
+    th: "• คลิกจุดในภาพเพื่อดู — จุดที่กดได้จะเรืองขึ้นเมื่อเลื่อนเมาส์ผ่าน\n• จุดสีทอง = ทางเดิน เปลี่ยนห้อง\n• ของที่เก็บได้เข้า “กระเป๋า”\n• เฟืองทองเหลือง 6 ตัวเข้า “แฟ้ม” — จับคู่ให้ครบ 3 ข้อ แล้วจะรู้ว่าต้องหมุนเข็มไปทางไหน\n• รหัสทุกตัวมีคำใบ้อยู่ในห้องเดียวกันเสมอ\n• เกมเซฟอัตโนมัติ\n• เวลาเล่นประมาณ 30 นาที",
+    en: "• Click anywhere in the photo to look — hotspots glow on hover\n• Gold dots = doorways\n• Items go to your BAG\n• Six brass gears go into the FILE — pair them into three readings and you'll know which way the hands must turn\n• Every code has its clue in the same room. Always.\n• Autosaves\n• About 30 minutes"
+  },
+
+  lang:         { th: "ภาษา",                  en: "Language" },
+  jumpscare:    { th: "ฉากหวิว (ใจเต้น)",       en: "Heart-skip moments" },
+  jumpOn:       { th: "เปิด",                  en: "On" },
+  jumpOff:      { th: "ปิด",                   en: "Off" },
+  sound:        { th: "เสียง",                 en: "Sound" },
+  reset:        { th: "ลบเซฟแล้วเริ่มใหม่",     en: "Delete save & restart" },
+  resetConfirm: { th: "ลบความคืบหน้าทั้งหมด แน่ใจไหม?", en: "Erase all progress. Are you sure?" },
+
+  bag:          { th: "กระเป๋า",               en: "Bag" },
+  bagEmpty:     { th: "ยังไม่มีอะไรในกระเป๋า",  en: "Your bag is empty." },
+  casefile:     { th: "แฟ้มหอนาฬิกา",           en: "The tower file" },
+  notes:        { th: "สิ่งที่อ่านแล้ว",         en: "Things you've read" },
+  suspects:     { th: "เข็มนาฬิกา",             en: "The hands" },
+  evidence:     { th: "เฟืองทองเหลือง",         en: "Brass gears" },
+  conclusions:  { th: "สิ่งที่อ่านออก",          en: "What it reads" },
+  map:          { th: "แผนผัง",                en: "Map" },
+
+  gotItem:      { th: "เก็บใส่กระเป๋าแล้ว:",    en: "Added to bag:" },
+  gotEvidence:  { th: "ได้เฟือง:",              en: "Gear recovered:" },
+  gotNote:      { th: "จดไว้แล้ว",              en: "Filed" },
+  nothingHere:  { th: "ไม่มีอะไรตรงนี้",        en: "Nothing here." },
+  useWhat:      { th: "จะใช้กับอะไร?",          en: "Use it on what?" },
+  cantUse:      { th: "ใช้ตรงนี้ไม่ได้",        en: "That does nothing here." },
+  showHotspots: { th: "แสดงจุดที่กดได้",        en: "Show hotspots" },
+  difficulty:   { th: "ระดับความยาก",            en: "Difficulty" },
+  easyMode:     { th: "ง่าย",                    en: "Easy" },
+  hardMode:     { th: "ยาก",                     en: "Hard" },
+
+  lockedTitle:  { th: "ล็อกอยู่",              en: "Locked" },
+  codeEnter:    { th: "ใส่รหัส",               en: "Enter code" },
+  codeWrong:    { th: "ไม่ใช่",                 en: "No." },
+  codeRight:    { th: "คลิก… เปิดแล้ว",         en: "Click. It opens." },
+
+  linkTitle:    { th: "วางเฟืองคู่กัน",          en: "Set two gears together" },
+  linkHint:     { th: "เลือกเฟือง 2 ตัวที่ฟันประกบกันได้", en: "Pick two gears whose teeth mesh" },
+  linkWrong:    { th: "ฟันไม่ประกบกัน",          en: "The teeth don't mesh." },
+  linkRight:    { th: "ประกบพอดี — อ่านออกแล้ว",  en: "They mesh. Now it reads." },
+  conclusionsLeft: { th: "ยังอ่านไม่ออกอีก",      en: "Still unread:" },
+
+  accuseTitle:  { th: "เข็มอยู่ในมือแล้ว — จะหมุนไปทางไหน",  en: "The hands are in your grip. Which way?" },
+  accuseWarn:   { th: "หมุนได้ครั้งเดียว",       en: "One turn. That's all you get." },
+  theEnd:       { th: "— จบ —",                en: "— THE END —" },
+  playAgain:    { th: "เล่นใหม่",              en: "Play again" },
+  timePlayed:   { th: "เวลาที่ใช้",             en: "Time played" },
+  evidenceFound:{ th: "เฟืองที่หาได้",           en: "Gears recovered" },
+
+  loading:      { th: "กำลังโหลด…",            en: "Loading…" },
+  imgMissing:   { th: "(ภาพฉากนี้กำลังเรนเดอร์)", en: "(scene photo rendering)" },
+  tapToContinue:{ th: "แตะเพื่ออ่านต่อ",        en: "Tap to continue" },
+
+  actLook:      { th: "ดู",                    en: "Look" },
+  actGo:        { th: "ไป",                    en: "Go" },
+  actTake:      { th: "หยิบ",                  en: "Take" },
+  actOpen:      { th: "เปิด",                  en: "Open" },
+  actUse:       { th: "ใช้",                   en: "Use" }
+};
+
+function t(key, lang) {
+  const v = STR[key];
+  if (!v) return key;
+  return v[lang] || v.th;
+}
+
+/* ===== story.js ===== */
+// หอนาฬิกาตีสิบสาม / THE THIRTEENTH CHIME — all game content. Bilingual TH/EN.
+// Coordinates x,y,w,h are PERCENT of the scene photo (0-100), so everything scales.
+
+const ITEMS = {
+  torch:    { name:{th:"ไฟฉายจากลิ้นชักโต๊ะอ่านหนังสือ",en:"Torch from the study desk"},
+              desc:{th:"ไฟฉายเหล็กของหอสมุด ก้นสลักเลข ๑๓\nแบตเหลือครึ่ง",en:"A library-issue steel torch. The number 13 stamped on the base.\nHalf a battery."} },
+  key_lobby:{ name:{th:"กุญแจโถงล่าง",en:"Lobby key"},
+              desc:{th:"กุญแจทองเหลืองอันเดียว ป้ายหนังเขียนว่า โถง",en:"One brass key. Leather tag: LOBBY."} },
+  map:      { name:{th:"แผนผังมหาวิทยาลัย",en:"Campus map"},
+              desc:{th:"แผ่นพับซีดจาง หอนาฬิกาอยู่กลางแผนผัง\nมีคนเอาดินสอวงมันไว้ แล้วลบไม่ออก",en:"A faded fold-out. The clock tower sits dead centre.\nSomeone circled it in pencil, hard enough that it won't rub out."} },
+  cutter:   { name:{th:"คีมตัดลวด",en:"Wire cutters"},
+              desc:{th:"ด้ามยางแตกลาย ปากคมอยู่",en:"Cracked rubber grips. Still sharp."} },
+  key_roof: { name:{th:"กุญแจดาดฟ้า",en:"Roof key"},
+              desc:{th:"กุญแจยาว สนิมจับ ป้ายเขียนว่า โดม",en:"A long rusted key. Tag: DOME."} },
+  crank:    { name:{th:"มือหมุน",en:"The crank"},
+              desc:{th:"เหล็กหล่อรูปตัวแอล หนักมาก\nปลายเป็นเหลี่ยมสี่มุม พอดีกับแกนบางอย่าง",en:"An L of cast iron, heavier than it looks.\nA square socket at the end. It fits a spindle somewhere."} },
+  notebook87:{name:{th:"สมุดปี ๒๕๓๐",en:"The 1987 notebook"},
+              desc:{th:"ปกแข็งบวมน้ำ ข้างในเต็มไปด้วยหน้าปัดนาฬิกาที่วาดมือ\nไม่มีอันไหนบอกเวลาเดียวกันเลย",en:"Water-swollen boards. Inside, page after page of hand-drawn clock faces.\nNo two show the same time."} },
+  idcard:   { name:{th:"บัตรนักศึกษา ๒๕๓๐",en:"Student card, 1987"},
+              desc:{th:"รูปถูกขูดจนขาว เหลือแต่เลขประจำตัว\nด้านหลังเขียนด้วยดินสอ: ๑๓",en:"The photo scratched down to white. Only the serial survives.\nOn the back, in pencil: 13"} }
+};
+
+const SUSPECTS = {
+  rewind:  { name:{th:"หมุนย้อนกลับ",en:"Turn them back"}, img:"",
+    role:{th:"ทวนเข็ม · คืนเวลาที่ถูกหยุดไว้",en:"Counter-clockwise · give back the hours it kept"} },
+  forward: { name:{th:"หมุนไปข้างหน้า",en:"Turn them forward"}, img:"",
+    role:{th:"ตามเข็ม · ไล่ให้ถึงเช้าเร็วที่สุด",en:"Clockwise · run it to morning as fast as it will go"} },
+  stop:    { name:{th:"จับลูกตุ้มให้นิ่ง",en:"Hold the pendulum still"}, img:"",
+    role:{th:"ไม่หมุน · ให้ทุกอย่างหยุดตรงนี้",en:"Don't turn it · let everything stop right here"} }
+};
+
+const EVIDENCE = {
+  E1:{ name:{th:"เฟือง ๑ · ฟัน ๑๓ ซี่",en:"Gear 1 · thirteen teeth"},
+       desc:{th:"จากตู้กระจกในซอกหนังสือ\nขอบสลัก: เขาเดินเข้ามา",en:"From the glass case in the stacks.\nEngraved on the rim: HE CAME IN"} },
+  E2:{ name:{th:"เฟือง ๒ · ฟัน ๑๒ ซี่",en:"Gear 2 · twelve teeth"},
+       desc:{th:"จากตู้เซฟใต้โต๊ะแล็บ\nขอบสลัก: มันไม่ได้เสีย",en:"From the safe under the lab bench.\nEngraved: IT WAS NOT BROKEN"} },
+  E3:{ name:{th:"เฟือง ๓ · ฟัน ๘ ซี่",en:"Gear 3 · eight teeth"},
+       desc:{th:"จากลิ้นชักข้างเปียโน\nขอบสลัก: เขารอ",en:"From the drawer beside the piano.\nEngraved: HE IS WAITING"} },
+  E4:{ name:{th:"เฟือง ๔ · ฟัน ๑๓ ซี่",en:"Gear 4 · thirteen teeth"},
+       desc:{th:"จากลิ้นชักใต้โครงกระดูก\nขอบสลัก: ไม่เคยออกไป",en:"From the drawer under the skeleton.\nEngraved: NEVER WENT OUT"} },
+  E5:{ name:{th:"เฟือง ๕ · ฟัน ๑๒ ซี่",en:"Gear 5 · twelve teeth"},
+       desc:{th:"จากฐานกล้องดูดาว\nขอบสลัก: เขาหยุดมันเอง",en:"From the telescope mount.\nEngraved: HE STOPPED IT HIMSELF"} },
+  E6:{ name:{th:"เฟือง ๖ · ฟัน ๘ ซี่",en:"Gear 6 · eight teeth"},
+       desc:{th:"จากแผงไฟใต้ดิน\nขอบสลัก: ให้มีคนหมุนกลับ",en:"From the breaker panel in the basement.\nEngraved: FOR SOMEONE TO WIND IT BACK"} }
+};
+
+const CONCLUSIONS = {
+  D1:{ pair:["E1","E4"], name:{th:"เขาเดินเข้ามา แล้วไม่เคยออกไป",en:"He came in. He never went out."},
+       text:{th:"ฟัน ๑๓ ซี่เท่ากันสองตัว ประกบกันพอดี\n\nเขาเดินเข้ามา · ไม่เคยออกไป\n\nคืนนั้นหอนาฬิกาตีสิบสามครั้ง เหมือนคืนนี้",
+             en:"Thirteen teeth each. They mesh perfectly.\n\nHE CAME IN · NEVER WENT OUT\n\nThat night the tower struck thirteen. Like tonight."} },
+  D2:{ pair:["E2","E5"], name:{th:"นาฬิกาไม่ได้เสีย เขาหยุดมันเอง",en:"The clock wasn't broken. He stopped it."},
+       text:{th:"ฟัน ๑๒ ซี่เท่ากัน\n\nมันไม่ได้เสีย · เขาหยุดมันเอง\n\nเขาถอดเฟืองออกหกตัว แล้วเอาไปซ่อนไว้คนละตึก",
+             en:"Twelve teeth each.\n\nIT WAS NOT BROKEN · HE STOPPED IT HIMSELF\n\nHe pulled six gears out and hid them in six different buildings."} },
+  D3:{ pair:["E3","E6"], name:{th:"เขารอให้มีคนหมุนมันกลับ",en:"He is waiting for someone to wind it back."},
+       text:{th:"ฟัน ๘ ซี่เท่ากัน\n\nเขารอ · ให้มีคนหมุนกลับ\n\nสามสิบเก้าปีแล้ว ที่ยังไม่มีใครเก็บครบหกตัว",
+             en:"Eight teeth each.\n\nHE IS WAITING · FOR SOMEONE TO WIND IT BACK\n\nThirty-nine years. Nobody has ever found all six."} }
+};
+
+const NOTES = {
+  n_desk:{ title:{th:"บนโต๊ะที่ฉันหลับไป",en:"The desk I fell asleep on"},
+    body:{th:"ตำราเปิดค้างหน้าเดิม ดินสอกลิ้งตกพื้น\n\nนาฬิกาผนังหยุดที่ ๐๐:๐๐\n\nฉันนับเสียงระฆังตอนตื่น\nหนึ่ง สอง สาม … สิบสอง\n\nแล้วมันตีอีกครั้งหนึ่ง",
+        en:"The textbook still open at the same page. The pencil on the floor.\n\nThe wall clock stopped at 00:00.\n\nI counted the bells as I woke.\nOne, two, three … twelve.\n\nThen it struck once more."} },
+
+  n_spines:{ title:{th:"หนังสือสามเล่มที่ยื่นออกมา",en:"Three books pushed out"},
+    body:{th:"ทั้งชั้นเรียบเสมอกันหมด ยกเว้นสามเล่มนี้\n\nสันเล่มบน — ๓\nสันเล่มกลาง — ๑\nสันเล่มล่าง — ๗\n\nไม่มีใครดึงหนังสือออกมาครึ่งเล่มแล้วทิ้งไว้สามสิบเก้าปี\nนอกจากตั้งใจ",
+        en:"The whole row is flush. Except these three.\n\nTop spine — 3\nMiddle spine — 1\nBottom spine — 7\n\nNobody pulls three books half out and leaves them for thirty-nine years.\nUnless they meant to."} },
+
+  n_guard:{ title:{th:"สมุดเวรในตู้ยาม",en:"The guard's logbook"},
+    body:{th:"๒๓:๔๐ ล็อกประตูทุกบานแล้ว\n๒๓:๕๕ ตรวจรอบสุดท้าย ไม่มีนักศึกษาค้าง\n๐๐:๐๐ หอนาฬิกาตี\n\n(บรรทัดสุดท้ายลายมือสั่น)\n\n๐๐:๐๐ มันตีสิบสามครั้ง อีกแล้ว\nปีนี้ปีที่สามสิบเก้า\nอย่าเปิดประตูให้ใครจนกว่าเข็มจะเดิน",
+        en:"23:40 all doors locked\n23:55 final round, no students left inside\n00:00 the tower strikes\n\n(the last line is written unsteadily)\n\n00:00 thirteen again.\nThirty-ninth year.\nDo not open any door until the hands move."} },
+
+  n_plaque:{ title:{th:"จารึกใต้อนุสาวรีย์",en:"The plaque under the statue"},
+    body:{th:"หอนาฬิกา · สร้างเสร็จ ๒๔๗๐\n\nด้านล่าง มีคนเอาตะปูขูดเพิ่มไว้ทีหลัง\n\n“เสียงที่สิบสามไม่ใช่ความผิดพลาด\nมันคือคนหนึ่งคน”",
+        en:"THE CLOCK TOWER · COMPLETED 1927\n\nBelow it, scratched in later with a nail:\n\n“The thirteenth is not a fault.\nIt is a person.”"} },
+
+  n_periodic:{ title:{th:"ธาตุสี่ตัวที่ถูกวง",en:"Four elements, circled"},
+    body:{th:"ตารางธาตุแผ่นเก่า มีคนวงไว้ด้วยดินสอแดงสี่ช่อง เรียงจากซ้ายไปขวา\n\nH · He · Li · Be\n\nข้างล่างเขียนว่า: เอาเลขประจำตัวมัน เรียงตามนี้",
+        en:"An old wall chart. Four boxes ringed in red pencil, left to right.\n\nH · He · Li · Be\n\nUnderneath: their numbers, in that order."} },
+
+  n_chalk:{ title:{th:"โน้ตบนกระดานดำ",en:"The notes on the blackboard"},
+    body:{th:"ห้าตัว เขียนด้วยชอล์ก ไม่มีเนื้อร้อง\n\nคีย์ที่  ๔ · ๒ · ๗ · ๑ · ๕\n\nมุมกระดานเขียนตัวเล็กๆ ว่า “เล่นให้ครบ แล้วลิ้นชักจะเปิดเอง”",
+        en:"Five of them, in chalk. No lyric.\n\nKeys  4 · 2 · 7 · 1 · 5\n\nIn the corner, small: “play it through and the drawer opens itself.”"} },
+
+  n_bones:{ title:{th:"ป้ายทองเหลืองบนลิ้นชัก",en:"The brass label on the drawer"},
+    body:{th:"โครงกระดูกแขวนอยู่ครบทุกชิ้น ยกเว้นซี่โครงซี่หนึ่ง\n\nป้ายบนลิ้นชักเขียนว่า:\n“ของที่หายไปจากคนหนึ่ง มักไปโผล่ที่ที่เขาไปครั้งสุดท้าย”",
+        en:"The skeleton is complete but for one rib.\n\nThe drawer label reads:\n“What goes missing from a man tends to turn up wherever he went last.”"} },
+
+  n_starchart:{ title:{th:"แผนที่ดาวบนบอร์ด",en:"The star chart on the corkboard"},
+    body:{th:"กลุ่มดาวหนึ่งถูกลากทับด้วยหมึกแดง\n\nริมกระดาษเขียนว่า:\nตั้งกล้องที่ ๐๔๗ แล้วมองลงไป ไม่ใช่มองขึ้น",
+        en:"One constellation traced over in red ink.\n\nIn the margin:\nSet the mount to 047 and look down. Not up."} },
+
+  n_notebook:{ title:{th:"สมุดปี ๒๕๓๐",en:"The 1987 notebook"},
+    body:{th:"หน้าแล้วหน้าเล่า มีแต่หน้าปัดนาฬิกาวาดมือ\n\nหน้าสุดท้ายเขียนว่า:\n\n“ผมถอดมันออกหกตัว\nซ่อนไว้ตึกละตัว\n\nถ้าคุณเก็บครบ แปลว่าคุณอ่านผมออก\nถ้าอ่านผมออก คุณจะรู้เองว่าต้องหมุนไปทางไหน”",
+        en:"Page after page of hand-drawn clock faces.\n\nThe last page:\n\n“I took six of them out.\nOne per building.\n\nIf you find all six it means you can read me.\nAnd if you can read me you will already know which way to turn.”"} },
+
+  n_idcard:{ title:{th:"บัตรนักศึกษา ๒๕๓๐",en:"Student card, 1987"},
+    body:{th:"รูปถูกขูดออกจนขาว\nชื่อถูกขูดออกจนขาว\n\nเหลือแค่เวลาตอกบัตรเข้า: ๒๓:๔๗\nกับตัวเลขที่เขียนหลังบัตรด้วยดินสอ: ๑๓\n\nไม่มีเวลาตอกบัตรออก",
+        en:"The photo scratched to white.\nThe name scratched to white.\n\nOnly the time stamped in: 23:47\nand, in pencil on the back: 13\n\nThere is no time stamped out."} },
+
+  n_brass:{ title:{th:"แผ่นทองเหลืองบนเครื่อง",en:"The brass plate on the machine"},
+    body:{th:"หอนาฬิกา · ระเบียบการตี\n\nเสียงแรกดังเมื่อเข็มทั้งสองทับกันที่ยอด\nเสียงถัดไปทุกสิบห้านาที\n\nตั้งแป้นให้ตรงเวลาที่เสียงสุดท้ายดัง\nแล้วเข็มจะเดินอีกครั้ง",
+        en:"CLOCK TOWER · STRIKING ORDER\n\nThe first bell sounds when both hands meet at the top.\nEach bell after it, fifteen minutes apart.\n\nSet the dial to the hour of the LAST bell.\nThe hands will move again."} },
+
+  n_breaker:{ title:{th:"แผงไฟ",en:"The breaker panel"},
+    body:{th:"สวิตช์ทุกตัวถูกสับลงหมด ยกเว้นตัวที่เขียนว่า หอนาฬิกา\nตัวนั้นถูกมัดลวดไว้กับตัวข้างๆ ให้สับขึ้นไม่ได้\n\nคนที่มัดมันไว้ ตั้งใจให้ตัดยาก แต่ไม่ได้ตั้งใจให้ตัดไม่ได้",
+        en:"Every switch is down except the one marked TOWER.\nThat one has been wired to its neighbour so it cannot be thrown.\n\nWhoever tied it wanted it to be hard. Not impossible."} }
+};
+
+const LOCKS = {
+  cabinet:{ digits:3, answer:"317",
+    prompt:{th:"ตู้กระจกปลายซอก แป้นทองเหลืองสามหลัก\nข้างในมีของทองเหลืองชิ้นเดียว",en:"A glass case at the end of the aisle. Three brass wheels.\nOne brass thing inside."},
+    hint:{th:"หนังสือสามเล่มในชั้นนี้ยื่นออกมาไม่เท่าคนอื่น — บนลงล่าง",en:"Three books on this shelf don't sit flush. Top to bottom."},
+    then:[
+      { closeup:"c_shelf" },
+      { say:{th:"แป้นหมุนเอง กระจกเลื่อนออก",en:"The wheels turn themselves. The glass slides."} },
+      { ev:"E1" }, { take:"key_lobby" }] },
+
+  safe:{ digits:4, answer:"1234",
+    prompt:{th:"ตู้เซฟเหล็กใต้โต๊ะแล็บ แป้นสี่หลัก",en:"A steel safe under the bench. Four digits."},
+    hint:{th:"ธาตุสี่ตัวบนผนังถูกวงไว้แล้ว — เอาเลขประจำตัวมัน เรียงซ้ายไปขวา",en:"Four elements on the wall are already circled. Their numbers, left to right."},
+    then:[
+      { closeup:"c_periodic" },
+      { say:{th:"ประตูเซฟเปิดออกช้าๆ ข้างในมีสองอย่าง",en:"The door swings slowly. Two things inside."} },
+      { ev:"E2" }, { take:"cutter" }] },
+
+  dome:{ digits:3, answer:"047",
+    prompt:{th:"ฐานกล้องมีแป้นตั้งมุมสามหลัก\nฐานล็อกไม่ให้หมุนจนกว่าจะตั้งตัวเลขถูก",en:"The mount has a three-digit angle dial.\nIt won't swing until the number is right."},
+    hint:{th:"มุมเขียนไว้ริมแผนที่ดาวบนบอร์ดแล้ว",en:"The angle is written in the margin of the star chart on the board."},
+    then:[
+      { closeup:"c_starmap" },
+      { say:{th:"กล้องหมุนลงต่ำจนเกือบชี้พื้น\nช่องใต้ฐานเปิดออก",en:"The tube swings down until it almost points at the floor.\nA hatch under the mount falls open."} },
+      { ev:"E5" }, { take:"notebook87" }, { closeup:"c_notebook" }, { note:"n_notebook" }] },
+
+  mech:{ digits:4, answer:"0300",
+    prompt:{th:"แป้นตั้งเวลาสี่หลักบนเครื่อง\nเฟืองครบแล้ว ลูกตุ้มพร้อมแล้ว เหลือแค่บอกมันว่ากี่โมง",en:"A four-digit setting dial on the mechanism.\nThe gears are seated. The pendulum is ready. It only needs to be told the hour."},
+    hint:{th:"แผ่นทองเหลืองข้างๆ บอกกติกาไว้แล้ว — เสียงแรกเที่ยงคืน ห่างกันทีละสิบห้านาที คืนนี้มันตีสิบสามครั้ง",en:"The brass plate beside it gives the rule — first bell at midnight, fifteen minutes apart. Tonight it struck thirteen times."},
+    then:[
+      { say:{th:"เข็มสะดุ้งหนึ่งที\nแล้วเริ่มเดิน",en:"The hands jolt once.\nThen they begin to move."} },
+      { set:"mech_open" }] }
+};
+
+// The blackboard bar: keys 4 · 2 · 7 · 1 · 5
+const RANAT = { bars:8, answer:[4,2,7,1,5] };
+
+
+const B = (th,en)=>({th,en});
+
+const SCENES = {
+
+library:{ img:"s_library", name:B("หอสมุด ชั้นสอง","Library, second floor"),
+  onEnter:[
+    { once:"intro", say:B(
+      "ฉันตื่นเพราะเสียงระฆัง\n\nหนึ่ง สอง สาม … สิบสอง\n\nแล้วมันตีอีกครั้งหนึ่ง",
+      "The bells woke me.\n\nOne, two, three … twelve.\n\nThen it struck once more.") },
+    { once:"intro2", say:B(
+      "ไฟดับทั้งตึก เหลือโคมบนโต๊ะดวงเดียว\nนาฬิกาผนังหยุดที่ ๐๐:๐๐\n\nไม่มีเสียงอะไรอีกเลย",
+      "The whole building is dark except the desk lamp.\nThe wall clock stopped at 00:00.\n\nNothing makes any sound at all.") }],
+  hotspots:[
+    { id:"desk", x:31, y:40, w:33, h:30, label:B("โต๊ะที่ฉันหลับไป","The desk I fell asleep on"), do:[
+      { note:"n_desk" },
+      { once:"gettorch", take:"torch" }] },
+    { id:"wallclock", x:83, y:1, w:11, h:15, label:B("นาฬิกาผนัง","The wall clock"), do:[
+      { say:B("เข็มทั้งสองทับกันชี้ขึ้นตรงๆ\nกระจกเย็นกว่าที่ควรจะเป็น","Both hands together, straight up.\nThe glass is colder than glass should be.") }] },
+    { id:"window", x:46, y:4, w:22, h:26, label:B("หน้าต่าง","The window"), do:[
+      { say:B("ข้างนอกมืดสนิท ยกเว้นหน้าปัดหอนาฬิกา\nมันยังสว่างอยู่ ทั้งที่ไฟทั้งมหาลัยดับ","Outside is solid black — except the tower's clock face.\nStill lit. With the whole campus out.") }] },
+    { id:"toStacks", x:86, y:40, w:13, h:46, kind:"door", label:B("ซอกชั้นหนังสือ","Into the stacks"), do:[{ goto:"stacks" }] },
+    { id:"toLobby", x:2, y:40, w:12, h:50, kind:"door", label:B("บันไดลงชั้นล่าง","Stairs down"), do:[{ goto:"lobby" }] }
+  ]},
+
+stacks:{ img:"s_stacks", name:B("ซอกชั้นหนังสือ","The stacks"),
+  hotspots:[
+    { id:"books", x:16, y:30, w:26, h:42, label:B("หนังสือสามเล่มที่ยื่นออกมา","Three books pushed out"), do:[
+      { note:"n_spines" }, { closeup:"c_shelf" }] },
+    { id:"case", x:44, y:5, w:14, h:36, label:B("ตู้กระจกปลายซอก","The glass case"), do:[
+      { if:{noflag:"code_cabinet"}, once:"scare1", scare:"h_face" },
+      { code:"cabinet" }] },
+    { id:"dust", x:34, y:82, w:26, h:16, label:B("พื้นระหว่างชั้น","The floor between shelves"), do:[
+      { say:B("ฝุ่นหนาเท่ากันหมด ยกเว้นทางเดินเส้นหนึ่ง\nเดินจากบันไดมาหยุดที่ตู้กระจก แล้วไม่เดินกลับ","Even dust everywhere — except one track.\nFrom the stairs to the glass case. It does not come back.") }] },
+    { id:"back", x:2, y:60, w:12, h:36, kind:"door", label:B("กลับห้องอ่านหนังสือ","Back to the reading room"), do:[{ goto:"library" }] }
+  ]},
+
+lobby:{ img:"s_lobby", name:B("โถงหน้าหอสมุด","Library lobby"),
+  hotspots:[
+    { id:"doors", x:36, y:26, w:30, h:52, kind:"door", label:B("ประตูกระจกบานใหญ่","The glass doors"), do:[
+      { if:{lacks:"key_lobby"}, say:B("โซ่คล้องอยู่ด้านนอก\nคล้องจากข้างนอก แปลว่ามีคนคล้องแล้วเดินออกไป","Chained. From the outside.\nWhich means someone chained it and walked away.") },
+      { if:{has:"key_lobby"}, say:B("กุญแจเข้าล็อกพอดี โซ่ร่วงลงพื้น","The key fits. The chain drops.") },
+      { if:{has:"key_lobby"}, goto:"courtyard" }] },
+    { id:"booth", x:68, y:22, w:26, h:36, label:B("ตู้ยาม","The guard booth"), do:[
+      { note:"n_guard" }, { once:"getmap", take:"map" }] },
+    { id:"prints", x:20, y:78, w:26, h:18, label:B("รอยเท้าเปียกบนพื้นหินขัด","Wet prints on the terrazzo"), do:[
+      { say:B("รอยเท้าเปียกเดินเข้ามา\nไม่มีรอยไหนเดินออก","Wet prints coming in.\nNone going out.") }] },
+    { id:"up", x:4, y:38, w:13, h:44, kind:"door", label:B("ขึ้นชั้นสอง","Up to the second floor"), do:[{ goto:"library" }] }
+  ]},
+
+courtyard:{ img:"s_courtyard", name:B("ลานกลาง","The central courtyard"),
+  onEnter:[{ once:"court1", say:B(
+    "อากาศข้างนอกนิ่งจนผิดปกติ ไม่มีลมเลย\n\nหอนาฬิกาอยู่ตรงกลาง หน้าปัดสว่างดวงเดียวในความมืด\nเข็มยังไม่ขยับ",
+    "The air outside is unnaturally still. No wind at all.\n\nThe tower stands in the middle, its face the only lit thing.\nThe hands have not moved.") }],
+  hotspots:[
+    { id:"statue", x:20, y:62, w:14, h:22, label:B("อนุสาวรีย์ผู้ก่อตั้ง","The founder's statue"), do:[
+      { note:"n_plaque" }] },
+    { id:"tower", x:50, y:7, w:8, h:30, label:B("หอนาฬิกา","The clock tower"), do:[
+      { say:B("หน้าปัดสว่าง ทั้งที่ไม่มีไฟที่ไหนติดเลย\nประตูฐานหออยู่ทางขวา","The face glows with no power anywhere on campus.\nThe door at its base is to the right.") }] },
+    { id:"toChem", x:4, y:44, w:14, h:34, kind:"door", label:B("ตึกวิทยาศาสตร์","Science building"), do:[{ goto:"chemlab" }] },
+    { id:"toMusic", x:36, y:48, w:12, h:30, kind:"door", label:B("ตึกศิลปกรรม","Fine arts building"), do:[{ goto:"music" }] },
+    { id:"toAnat", x:62, y:47, w:13, h:31, kind:"door", label:B("ตึกกายวิภาค","Anatomy building"), do:[{ goto:"anatomy" }] },
+    { id:"toBase", x:33, y:76, w:14, h:18, kind:"door", label:B("บันไดลงใต้ดิน","Stairs to the basement"), do:[
+      { if:{lacks:"cutter"}, say:B("ประตูเหล็กปิดอยู่ มีลวดพันรอบมือจับ\nต้องมีอะไรตัด","A steel door, wire wound round the handle.\nThis needs cutting.") },
+      { if:{has:"cutter"}, goto:"basement" }] },
+    { id:"toClock", x:87, y:52, w:11, h:32, kind:"door", label:B("ประตูฐานหอนาฬิกา","The tower door"), do:[
+      { if:{lacks:"crank"}, say:B("ประตูเปิดอยู่ ข้างในมืดสนิท\nแต่บันไดขึ้นไปไม่ได้ถ้าไม่มีอะไรหมุนโซ่ถ่วง","The door stands open. Inside is black.\nBut the stair won't clear without something to wind the counterweight.") },
+      { if:{has:"crank"}, goto:"clockroom" }] },
+    { id:"back", x:47, y:82, w:14, h:15, kind:"door", label:B("กลับเข้าหอสมุด","Back into the library"), do:[{ goto:"lobby" }] }
+  ]},
+
+chemlab:{ img:"s_chemlab", name:B("ห้องปฏิบัติการเคมี","Chemistry laboratory"),
+  hotspots:[
+    { id:"chart", x:2, y:1, w:28, h:40, label:B("ตารางธาตุบนผนัง","The periodic table"), do:[
+      { note:"n_periodic" }, { closeup:"c_periodic" }] },
+    { id:"safe", x:24, y:62, w:20, h:28, label:B("ตู้เซฟใต้โต๊ะ","The safe under the bench"), do:[
+      { code:"safe" }] },
+    { id:"glass", x:42, y:36, w:22, h:22, label:B("เครื่องแก้วบนโต๊ะ","Glassware on the bench"), do:[
+      { say:B("บีกเกอร์ยังมีน้ำอยู่ครึ่งใบ\nน้ำไม่ระเหยเลยตั้งแต่ปี ๒๕๓๐","A beaker still half full.\nNothing has evaporated since 1987.") }] },
+    { id:"back", x:2, y:52, w:12, h:40, kind:"door", label:B("กลับลานกลาง","Back to the courtyard"), do:[{ goto:"courtyard" }] }
+  ]},
+
+music:{ img:"s_music", name:B("ห้องซ้อมดนตรี","Music practice room"),
+  hotspots:[
+    { id:"board", x:22, y:21, w:24, h:22, label:B("กระดานดำ","The blackboard"), do:[
+      { note:"n_chalk" }, { closeup:"c_blackboard" }] },
+    { id:"piano", x:18, y:48, w:34, h:36, label:B("เปียโน","The piano"), do:[
+      { if:{noflag:"ranat_ok"}, puzzle:1 },
+      { if:{flag:"ranat_ok"}, say:B("ลิ้นชักข้างเปียโนเปิดค้างอยู่แล้ว","The drawer beside it is already open.") }] },
+    { id:"drawer", x:60, y:21, w:30, h:33, label:B("ลิ้นชักข้างเปียโน","The drawer beside the piano"), do:[
+      { if:{noflag:"ranat_ok"}, say:B("ล็อก ไม่มีรูกุญแจ\nมันเปิดจากข้างใน","Locked. No keyhole.\nIt opens from inside.") },
+      { if:{flag:"ranat_ok"}, once:"scare2", scare:"h_hall" },
+      { if:{flag:"ranat_ok"}, ev:"E3" },
+      { if:{flag:"ranat_ok"}, take:"key_roof" }] },
+    { id:"back", x:2, y:52, w:12, h:40, kind:"door", label:B("กลับลานกลาง","Back to the courtyard"), do:[{ goto:"courtyard" }] }
+  ]},
+
+anatomy:{ img:"s_anatomy", name:B("ห้องกายวิภาค","Anatomy laboratory"),
+  hotspots:[
+    { id:"skeleton", x:51, y:19, w:11, h:72, label:B("โครงกระดูก","The skeleton"), do:[
+      { say:B("ครบทุกชิ้น ยกเว้นซี่โครงข้างซ้ายซี่หนึ่ง\nรอยตัดเรียบ ไม่ใช่หัก","Complete, but for one rib on the left side.\nThe cut is clean. Not a break.") }] },
+    { id:"drawer", x:71, y:40, w:15, h:45, label:B("ลิ้นชักใต้โครงกระดูก","The drawer beneath it"), do:[
+      { note:"n_bones" }, { ev:"E4" }, { take:"idcard" }, { note:"n_idcard" }, { closeup:"c_idcard" }] },
+    { id:"jars", x:22, y:23, w:20, h:50, label:B("โหลตัวอย่าง","The specimen jars"), do:[
+      { say:B("ป้ายทุกใบเขียนปีไว้\nมีใบเดียวที่เขียนว่า ๒๕๓๐ และมันว่างเปล่า","Every label carries a year.\nOne says 1987, and it is empty.") }] },
+    { id:"up", x:91, y:25, w:9, h:60, kind:"door", label:B("บันไดขึ้นดาดฟ้า","Stairs to the roof"), do:[
+      { if:{lacks:"key_roof"}, say:B("ประตูดาดฟ้าล็อก ป้ายข้างล็อกเขียนว่า โดม","The roof door is locked. The tag beside it says DOME.") },
+      { if:{has:"key_roof"}, goto:"observatory" }] },
+    { id:"back", x:2, y:52, w:12, h:40, kind:"door", label:B("กลับลานกลาง","Back to the courtyard"), do:[{ goto:"courtyard" }] }
+  ]},
+
+observatory:{ img:"s_observatory", name:B("หอดูดาว","The observatory"),
+  onEnter:[{ once:"obs1", scare:"h_window" }],
+  hotspots:[
+    { id:"chart", x:1, y:25, w:14, h:28, label:B("แผนที่ดาวบนบอร์ด","The star chart"), do:[
+      { note:"n_starchart" }, { closeup:"c_starmap" }] },
+    { id:"scope", x:44, y:12, w:46, h:42, label:B("กล้องดูดาว","The telescope"), do:[
+      { code:"dome" }] },
+    { id:"log", x:20, y:60, w:26, h:32, label:B("โต๊ะสมุดบันทึก","The logbook desk"), do:[
+      { say:B("บันทึกการดูดาวหยุดกลางประโยค ปี ๒๕๓๐\n\n“คืนนี้ท้องฟ้าใสมาก แต่ผมไม่ได้จะดูดาว”","The observing log stops mid-sentence, 1987.\n\n“Very clear tonight. But I did not come up here for the sky.”") }] },
+    { id:"back", x:2, y:56, w:12, h:38, kind:"door", label:B("ลงบันได","Back down"), do:[{ goto:"anatomy" }] }
+  ]},
+
+basement:{ img:"s_basement", name:B("ห้องใต้ดิน","The basement"),
+  hotspots:[
+    { id:"panel", x:22, y:25, w:22, h:34, label:B("แผงไฟ","The breaker panel"), do:[
+      { note:"n_breaker" },
+      { if:{noflag:"power"}, say:B("ลวดเส้นนั้นตัดขาดง่ายกว่าที่คิด\nสวิตช์สับขึ้น — ข้างบนมีเสียงอะไรเริ่มหมุน","The wire parts more easily than expected.\nThe switch goes up. Somewhere above, something starts turning.") },
+      { if:{noflag:"power"}, set:"power" },
+      { ev:"E6" }] },
+    { id:"crank", x:18, y:72, w:20, h:18, label:B("เหล็กตัวแอลพิงกำแพง","An iron L against the wall"), do:[
+      { take:"crank" }] },
+    { id:"water", x:38, y:80, w:34, h:16, label:B("น้ำขังบนพื้น","Standing water"), do:[
+      { say:B("เงาหน้าปัดนาฬิกาสะท้อนอยู่ในน้ำ\nทั้งที่ตรงนี้มองไม่เห็นหอนาฬิกา","The clock face is reflected in it.\nFrom down here you cannot see the tower at all.") }] },
+    { id:"back", x:53, y:30, w:28, h:38, kind:"door", label:B("กลับขึ้นลานกลาง","Back up to the courtyard"), do:[{ goto:"courtyard" }] }
+  ]},
+
+clockroom:{ img:"s_clockroom", name:B("ห้องเครื่องหอนาฬิกา","The tower machine room"),
+  onEnter:[{ once:"clk1", say:B(
+    "ข้างในอุ่นกว่าข้างนอก\n\nแกนเปล่าหกแกนเรียงอยู่บนโครงเหล็ก\nรอของที่หายไปสามสิบเก้าปี",
+    "It is warmer in here than outside.\n\nSix empty spindles in a row on the frame.\nWaiting for what went missing thirty-nine years ago.") }],
+  hotspots:[
+    { id:"plate", x:20, y:64, w:16, h:20, label:B("แผ่นทองเหลืองบนเครื่อง","The brass plate"), do:[
+      { note:"n_brass" }, { closeup:"c_brass" }] },
+    { id:"spindles", x:38, y:36, w:30, h:36, label:B("แกนเปล่าหกแกน","Six empty spindles"), do:[
+      { once:"seated", say:B("เฟืองที่มีเข้าที่ทีละตัว\nลูกตุ้มเริ่มแกว่งเอง\n\n(แกนที่ยังว่าง จะว่างแบบนั้นตลอดไป ถ้าไม่กลับไปเก็บ)","The gears you have seat, one by one.\nThe pendulum begins to swing.\n\n(Any spindle still bare will stay bare, unless you go back for it.)") },
+      { set:"seated" },
+      { code:"mech" }] },
+    { id:"pendulum", x:61, y:68, w:10, h:16, label:B("ลูกตุ้ม","The pendulum"), do:[
+      { say:B("ทองเหลืองยาวเท่าตัวคน\nปลายมีรอยมือจับเปื้อนอยู่รอยเดียว ขนาดเท่ามือฉัน","Brass, as long as a person.\nOne handprint on it. About the size of mine.") }] },
+    { id:"up", x:88, y:40, w:9, h:44, kind:"door", label:B("บันไดขึ้นยอดหอ","Stairs to the top"), do:[
+      { if:{noflag:"mech_open"}, say:B("บันไดถูกโซ่ถ่วงขวางอยู่\nจนกว่าเข็มจะเดิน","The counterweight chain still blocks the stair.\nUntil the hands move.") },
+      { if:{flag:"mech_open"}, goto:"towertop" }] },
+    { id:"back", x:2, y:56, w:11, h:38, kind:"door", label:B("ออกไปลานกลาง","Out to the courtyard"), do:[{ goto:"courtyard" }] }
+  ]},
+
+towertop:{ img:"s_towertop", name:B("ยอดหอนาฬิกา","The top of the tower"),
+  onEnter:[{ once:"top1", say:B(
+    "ลมกลับมาแล้ว\n\nเข็มทั้งสองอยู่ตรงหน้า ใหญ่เท่าแขน\nจับได้ด้วยมือเปล่า",
+    "The wind is back.\n\nBoth hands are here, arm-long, close enough to hold.\nBare hands are enough.") }],
+  hotspots:[
+    { id:"hands", x:26, y:20, w:16, h:36, label:B("จับเข็มนาฬิกา","Take hold of the hands"), do:[
+      { accuse:1 }] },
+    { id:"city", x:48, y:38, w:26, h:16, label:B("มองลงไปข้างล่าง","Look down"), do:[
+      { say:B("ไฟทั้งเมืองติดปกติ\nมีแต่มหาลัยที่มืด","The whole city has its lights on.\nOnly the university is dark.") }] },
+    { id:"ladder", x:28, y:56, w:16, h:31, label:B("บันไดเก่าพิงกำแพง","The old ladder against the wall"), do:[
+      { say:B("ขั้นบนสุดมีรอยขูดเป็นขีดเล็กๆ\nนับได้สิบสามขีด","Small scratches on the top rung.\nThirteen of them.") }] },
+    { id:"back", x:2, y:58, w:11, h:36, kind:"door", label:B("ลงไปห้องเครื่อง","Back down"), do:[{ goto:"clockroom" }] }
+  ]}
+
+};
+
+const ENDINGS = {
+
+rewind_full:{ img:"e_out",
+  title:{th:"จบแบบสมบูรณ์ · “หมุนย้อนกลับ”",en:"TRUE ENDING · “Turn them back”"},
+  body:{th:"ฉันหมุนทวนเข็ม\n\nช้ามาก หนักมาก เหมือนหมุนอะไรที่ไม่อยากขยับมาสามสิบเก้าปี\n\nระฆังดังขึ้นสิบสองครั้ง\nแล้วหยุด\n\nไฟทั้งมหาลัยติดพร้อมกัน ประตูทุกบานคลายล็อกพร้อมกัน\n\n—\n\nตอนเดินลงมาถึงลานกลาง ฟ้ากำลังจะสว่าง\nโซ่ที่คล้องประตูใหญ่ร่วงอยู่กับพื้น\n\nฉันหันกลับไปมองหอนาฬิกาครั้งสุดท้าย\nเข็มเดินอยู่ ตรงเวลา\n\nและใต้อนุสาวรีย์ ตรงที่เมื่อคืนมีรอยขูดว่า “มันคือคนหนึ่งคน”\nตอนนี้มีแต่หินเรียบๆ\n\n—\n\nวันรุ่งขึ้น ฉันขึ้นไปหอสมุดชั้นสองอีกครั้ง\n\nตำราของฉันยังเปิดค้างอยู่หน้าเดิม\nดินสอกลิ้งอยู่ที่พื้นเหมือนเดิม\n\nสมุดปี ๒๕๓๐ ที่ฉันใส่กระเป๋าลงมา ไม่อยู่ในกระเป๋าแล้ว\n\nมันวางอยู่บนโต๊ะ ปิดเรียบร้อย\nและมีคนเขียนเพิ่มไว้ที่ปกด้วยดินสอ\n\n“ขอบคุณครับ”",
+      en:"I turn them counter-clockwise.\n\nSlow. Heavy. Like turning something that has not wanted to move for thirty-nine years.\n\nThe bell rings twelve times.\nAnd stops.\n\nEvery light on campus comes up at once. Every lock lets go at once.\n\n—\n\nBy the time I reach the courtyard the sky is going pale.\nThe chain from the main doors is lying on the ground.\n\nI look back at the tower one last time.\nThe hands are moving. Correctly.\n\nAnd under the statue, where last night something was scratched — “it is a person” —\nthere is only smooth stone.\n\n—\n\nThe next day I go back up to the second floor.\n\nMy textbook is still open at the same page.\nThe pencil is still on the floor.\n\nThe 1987 notebook I put in my bag is not in my bag.\n\nIt is on the desk. Closed, neatly.\nAnd someone has added one line to the cover in pencil.\n\n“Thank you.”"} },
+
+rewind_partial:{ img:"e_loop",
+  title:{th:"จบแบบไม่สมบูรณ์ · “หมุนย้อนกลับ”",en:"PARTIAL ENDING · “Turn them back”"},
+  body:{th:"ฉันหมุนทวนเข็ม — ถูกทางแล้ว\n\nแต่เครื่องยังไม่ครบ และฉันก็ยังอ่านเขาไม่ออกทั้งหมด\n\nเข็มขยับได้สองสามนาทีแล้วก็สะดุด\nระฆังดังสิบสองครั้ง แล้วดังครั้งที่สิบสามอีกจนได้\n\n—\n\nฉันลืมตาขึ้นบนโต๊ะอ่านหนังสือ\n\nตำราเปิดค้างหน้าเดิม ดินสอกลิ้งตกพื้น\nนาฬิกาผนังหยุดที่ ๐๐:๐๐\n\nข้างๆ ตำราของฉัน มีสมุดอีกเล่มวางอยู่\nเล่มที่เมื่อคืนฉันเก็บมาเอง\n\nหน้าสุดท้ายมีลายมือเพิ่มมาอีกบรรทัด\n\n“เกือบแล้ว\nรอบหน้าเก็บให้ครบหกตัวนะครับ”",
+      en:"Counter-clockwise — the right way.\n\nBut the machine is not whole, and I could not read all of him.\n\nThe hands move for a few minutes, then catch.\nThe bell rings twelve times. And then, after all, a thirteenth.\n\n—\n\nI open my eyes on the study desk.\n\nThe textbook open at the same page. The pencil on the floor.\nThe wall clock stopped at 00:00.\n\nBeside my book there is another notebook.\nThe one I picked up last night.\n\nOn the last page there is one new line of handwriting.\n\n“Close.\nAll six next time, please.”"} },
+
+forward:{ img:"e_loop",
+  title:{th:"จบแบบผิดทาง · “หมุนไปข้างหน้า”",en:"WRONG ENDING · “Turn them forward”"},
+  body:{th:"ฉันหมุนตามเข็ม อยากให้ถึงเช้าเร็วๆ\n\nเข็มวิ่งฉิว หนึ่งชั่วโมง สองชั่วโมง หกชั่วโมง\nฟ้าข้างนอกสว่างขึ้นจริงๆ\n\nระฆังดังรัวจนนับไม่ทัน แล้วเงียบ\n\n—\n\nฉันลืมตาขึ้นบนโต๊ะอ่านหนังสือ\n\nนาฬิกาผนังหยุดที่ ๐๐:๐๐ เหมือนเดิม\n\nเวลาที่เขาหยุดไว้ ไม่ได้หายไปไหน\nการหมุนไปข้างหน้าแค่ข้ามมันไปเฉยๆ\nแล้วมันก็รออยู่ตรงนั้น รอบหน้าก็ยังอยู่ตรงนั้น\n\n(เขาไม่ได้อยากให้ใครข้ามเขาไป — ลองใหม่)",
+      en:"I turn them clockwise. I want it to be morning.\n\nThe hands race — one hour, two, six.\nOutside, the sky really does come up.\n\nThe bell rings too fast to count, then goes quiet.\n\n—\n\nI open my eyes on the study desk.\n\nThe wall clock stopped at 00:00. As before.\n\nThe hours he stopped did not go anywhere.\nTurning forward only stepped over them.\nAnd they are still there. They will still be there next time.\n\n(He did not want to be stepped over. Try again.)"} },
+
+stop:{ img:"e_stuck",
+  title:{th:"จบแบบผิดทาง · “จับลูกตุ้มให้นิ่ง”",en:"WRONG ENDING · “Hold the pendulum still”"},
+  body:{th:"ฉันเอามือกุมลูกตุ้มไว้\n\nมันหยุดง่ายกว่าที่คิดมาก\nง่ายเหมือนมันรอให้ใครสักคนทำแบบนี้อยู่แล้ว\n\nระฆังไม่ดังอีกเลย\n\n—\n\nข้างนอกไม่สว่างขึ้น\nประตูไม่คลายล็อก\nลมหยุดอีกครั้ง\n\nฉันเดินลงมาถึงลานกลาง แล้วเดินกลับขึ้นไป\nแล้วลงมาใหม่\n\n—\n\nสามสิบเก้าปีต่อมา\nมีนักศึกษาคนหนึ่งหลับอยู่บนโต๊ะหอสมุดชั้นสอง\n\nแล้วระฆังก็ตีสิบสามครั้ง\n\n(เขาหยุดมันมาแล้วครั้งหนึ่ง อย่าเป็นคนที่สอง — ลองใหม่)",
+      en:"I close my hands around the pendulum.\n\nIt stops far more easily than it should.\nAs though it had been waiting for someone to do exactly this.\n\nThe bell never rings again.\n\n—\n\nOutside does not get light.\nThe doors do not let go.\nThe wind stops again.\n\nI walk down to the courtyard, and back up.\nAnd down again.\n\n—\n\nThirty-nine years later\na student is asleep on a desk on the library's second floor.\n\nAnd the bell strikes thirteen.\n\n(He stopped it once already. Don't be the second one. Try again.)"} }
+
+};
+
+// Scene photography — generated with Higgsfield (Auto, Unlimited), served from its CDN.
+const CDN = "https://d8j0ntlcm91z4.cloudfront.net/user_338bwIcBmB106edt2TYDHwoiyrB/hf_20260802_";
+const P = {
+  s_library:"202526_6b9e9c88-d12a-40b0-a9f5-c1246321437b",
+  s_stacks:"202548_9d153b36-bcd8-4c78-8fb7-81b2cee1fb13",
+  s_lobby:"202600_21cf16b5-3eee-4d18-9c31-43a3db9fcd0e",
+  s_courtyard:"202612_4f7106c5-0656-46f8-93b8-158a1c85d7c1",
+  s_chemlab:"202624_3e71128e-660b-4978-8505-dcff7010078e",
+  s_music:"202636_471b01a9-7bd5-4baf-99c5-324e862038de",
+  s_observatory:"200447_8aa5c1a4-0236-40c9-9a6d-72d09e9e02d3",
+  s_anatomy:"200453_d386135b-5e06-4210-a60d-9b6d9a5b816c",
+  s_basement:"200405_77da657d-fcc1-4aeb-a4d0-9b02c1cd2aab",
+  s_clockroom:"200553_49ef29dc-3aab-4f6e-916f-dae27d50e1db",
+  s_towertop:"200928_6c46a287-c34c-45bc-adfe-abcda20f1e2b",
+  c_shelf:"200952_903fd2d8-83ad-4c3d-b10f-c6b7c0892594",
+  c_periodic:"201311_15e88dcc-70d0-4b00-b2bc-6b36ec23a942",
+  c_blackboard:"201325_8f98ecec-8fd6-4940-909e-d09ab6b08079",
+  c_starmap:"201351_befa2f18-102a-4e50-bd66-235556f10749",
+  c_notebook:"201353_bc374e7b-5957-4d32-b933-97902552778c",
+  c_idcard:"203146_e613410b-0286-4213-99b8-dba6bfb60811",
+  c_brass:"201420_40a3c9b4-7c88-4df1-b744-94df776e2709",
+  h_hall:"201458_9b54da43-6442-4d0b-962d-211eae3614a3",
+  h_face:"201512_be228e04-3860-4614-9bab-e6abd68ca1b8",
+  h_window:"201526_54d60bfe-af80-480f-9a10-9fe2ecaa0d1e",
+  e_out:"201540_e616bd85-2428-4899-924b-a9a6080039b8",
+  e_loop:"202711_2c7e9da0-47ed-4abb-92db-5b99db0f0d2c",
+  e_stuck:"202759_811c03cc-f6c2-4eda-84dd-457040c88e39",
+  ui_title:"202812_98b47a83-1a64-43f0-b178-39ada08dc497",
+  g1:"202825_0d2229c0-43d4-4a2e-a278-bf1b4bd8f0b2",
+  g2:"202837_7e060646-9e32-460b-8122-4db84b26deb7",
+  g3:"203132_2cfd675d-ef28-4049-a661-d938843f1360",
+  g4:"203146_e613410b-0286-4213-99b8-dba6bfb60811",
+  g5:"203156_d837c81c-0d8e-4b9d-9038-39de9c4b8ea2",
+  g6:"203216_c0d3a0c5-80d5-4717-a427-fb584156102a"
+};
+const IMG = Object.fromEntries(Object.entries(P).map(([k,v]) => [k, CDN + v + ".png"]));
+
+/* ===== engine ===== */
+
+/* ============================ state ============================ */
+const SAVE = "chime13.v1";
+const fresh = () => ({ lang:"th", scene:"library", items:{}, ev:{}, notes:{}, flags:{}, conc:{},
+                       scares:true, sound:true, ms:0, done:null });
+let S = fresh(), started = 0, mem = null;
+
+function save(){
+  S.ms += performance.now() - started; started = performance.now();
+  try{ localStorage.setItem(SAVE, JSON.stringify(S)); }catch(e){ mem = JSON.stringify(S); }
+}
+function load(){
+  try{ const r = localStorage.getItem(SAVE) || mem; return r ? JSON.parse(r) : null; }
+  catch(e){ return mem ? JSON.parse(mem) : null; }
+}
+function wipe(){ try{ localStorage.removeItem(SAVE); }catch(e){} mem = null; }
+
+const L  = k => (STR[k] && (STR[k][S.lang] || STR[k].th)) || k;
+const LT = o => !o ? "" : (o[S.lang] || o.th || "");
+
+/* ============================ audio ============================ */
+let AC = null, amb = null;
+function actx(){
+  if(AC) return AC;
+  try{ AC = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; }
+  return AC;
+}
+function noise(dur){
+  const c = actx(); if(!c) return null;
+  const n = c.sampleRate * dur, b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0);
+  for(let i=0;i<n;i++) d[i] = Math.random()*2-1;
+  const s = c.createBufferSource(); s.buffer = b; return s;
+}
+function ambient(){
+  const c = actx(); if(!c || amb) return;
+  const g = c.createGain(); g.gain.value = 0; g.connect(c.destination);
+  const f = c.createBiquadFilter(); f.type="lowpass"; f.frequency.value = 180; f.connect(g);
+  [41.2, 41.9, 62.1].forEach(hz=>{
+    const o = c.createOscillator(); o.type="sawtooth"; o.frequency.value = hz;
+    const og = c.createGain(); og.gain.value = .28; o.connect(og); og.connect(f); o.start();
+  });
+  const w = noise(6); if(w){ w.loop = true; const wf = c.createBiquadFilter();
+    wf.type="bandpass"; wf.frequency.value = 420; wf.Q.value = .7;
+    const wg = c.createGain(); wg.gain.value = .05; w.connect(wf); wf.connect(wg); wg.connect(g); w.start(); }
+  amb = g; g.gain.linearRampToValueAtTime(S.sound ? .16 : 0, c.currentTime + 3);
+}
+function sfx(kind){
+  const c = actx(); if(!c || !S.sound) return;
+  const t = c.currentTime, g = c.createGain(); g.connect(c.destination);
+  if(kind==="click"){ const o=c.createOscillator(); o.type="triangle"; o.frequency.setValueAtTime(760,t);
+    o.frequency.exponentialRampToValueAtTime(220,t+.07); g.gain.setValueAtTime(.05,t);
+    g.gain.exponentialRampToValueAtTime(.0005,t+.09); o.connect(g); o.start(t); o.stop(t+.1); }
+  if(kind==="step"){ const n=noise(.2); if(!n) return; const f=c.createBiquadFilter();
+    f.type="lowpass"; f.frequency.value=520; g.gain.setValueAtTime(.10,t);
+    g.gain.exponentialRampToValueAtTime(.0005,t+.2); n.connect(f); f.connect(g); n.start(t); n.stop(t+.22); }
+  if(kind==="good"){ [523,659,784].forEach((hz,i)=>{ const o=c.createOscillator(); o.type="sine";
+    o.frequency.value=hz; const gg=c.createGain(); gg.gain.setValueAtTime(0,t+i*.08);
+    gg.gain.linearRampToValueAtTime(.07,t+i*.08+.02);
+    gg.gain.exponentialRampToValueAtTime(.0005,t+i*.08+.5); o.connect(gg); gg.connect(c.destination);
+    o.start(t+i*.08); o.stop(t+i*.08+.55); }); }
+  if(kind==="bad"){ const o=c.createOscillator(); o.type="square"; o.frequency.setValueAtTime(150,t);
+    o.frequency.exponentialRampToValueAtTime(70,t+.28); g.gain.setValueAtTime(.06,t);
+    g.gain.exponentialRampToValueAtTime(.0005,t+.3); o.connect(g); o.start(t); o.stop(t+.32); }
+  if(kind==="note"){ const o=c.createOscillator(); o.type="sine"; o.frequency.value=440;
+    g.gain.setValueAtTime(.09,t); g.gain.exponentialRampToValueAtTime(.0005,t+.6);
+    o.connect(g); o.start(t); o.stop(t+.62); }
+  if(kind==="scare"){
+    const n=noise(1.1); if(n){ const f=c.createBiquadFilter(); f.type="highpass"; f.frequency.value=900;
+      g.gain.setValueAtTime(.5,t); g.gain.exponentialRampToValueAtTime(.0006,t+1.0);
+      n.connect(f); f.connect(g); n.start(t); n.stop(t+1.1); }
+    const o=c.createOscillator(); o.type="sawtooth"; o.frequency.setValueAtTime(1400,t);
+    o.frequency.exponentialRampToValueAtTime(48,t+.9);
+    const og=c.createGain(); og.gain.setValueAtTime(.34,t);
+    og.gain.exponentialRampToValueAtTime(.0006,t+.95);
+    o.connect(og); og.connect(c.destination); o.start(t); o.stop(t+1.0);
+    for(let i=0;i<3;i++){ const b=c.createOscillator(); b.type="sine"; b.frequency.value=52;
+      const bg=c.createGain(); bg.gain.setValueAtTime(0,t+1.1+i*.72);
+      bg.gain.linearRampToValueAtTime(.2,t+1.16+i*.72);
+      bg.gain.exponentialRampToValueAtTime(.0006,t+1.5+i*.72);
+      b.connect(bg); bg.connect(c.destination); b.start(t+1.1+i*.72); b.stop(t+1.6+i*.72); } }
+}
+function noteTone(i){
+  const c = actx(); if(!c || !S.sound) return;
+  const hz = [0,392,440,494,523,587,659,740,784][i] || 440;
+  const t = c.currentTime, o = c.createOscillator(), g = c.createGain();
+  o.type = "triangle"; o.frequency.value = hz;
+  g.gain.setValueAtTime(.13,t); g.gain.exponentialRampToValueAtTime(.0005,t+.75);
+  o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+.8);
+}
+
+/* ============================ dom ============================ */
+const $ = id => document.getElementById(id);
+const sceneImg=$("sceneimg"), hots=$("hots"), sayBox=$("say"), sayTxt=$("saytext"), sayMore=$("saymore");
+
+function openM(id){ $(id).style.display="flex"; }
+function closeM(id){ $(id).style.display="none"; }
+document.querySelectorAll("[data-close]").forEach(b =>
+  b.addEventListener("click", e => { e.target.closest(".mod").style.display="none"; sfx("click"); }));
+
+function toast(text){
+  const d = document.createElement("div"); d.className="tst"; d.textContent = text;
+  $("toast").appendChild(d);
+  setTimeout(()=>{ d.style.transition=".5s"; d.style.opacity="0"; setTimeout(()=>d.remove(),520); }, 2400);
+}
+
+/* ============================ conditions ============================ */
+const allConc = () => Object.keys(CONCLUSIONS).every(k => S.conc[k]);
+function ok(c){
+  if(!c) return true;
+  if(c.has    && !S.items[c.has])   return false;
+  if(c.lacks  &&  S.items[c.lacks]) return false;
+  if(c.flag   && !S.flags[c.flag])  return false;
+  if(c.noflag &&  S.flags[c.noflag])return false;
+  if(c.ready    && !allConc()) return false;
+  if(c.notready &&  allConc()) return false;
+  return true;
+}
+
+/* ============================ step runner ============================ */
+let busy = false;
+function waitSay(txt){
+  return new Promise(res=>{
+    sayTxt.textContent = LT(txt);
+    sayMore.textContent = L("tapToContinue");
+    sayBox.style.display = "block";
+    const go = () => { sayBox.style.display="none"; sayBox.removeEventListener("click",go);
+                       document.removeEventListener("keydown",kd); sfx("click"); res(); };
+    const kd = e => { if(e.code==="Space"||e.code==="Enter"||e.code==="Escape"){ e.preventDefault(); go(); } };
+    sayBox.addEventListener("click", go);
+    document.addEventListener("keydown", kd);
+  });
+}
+function waitModal(id){
+  return new Promise(res=>{
+    openM(id);
+    const m = $(id);
+    const iv = setInterval(()=>{ if(m.style.display==="none"){ clearInterval(iv); res(); } }, 120);
+  });
+}
+function showNote(nid){
+  const n = NOTES[nid]; if(!n) return Promise.resolve();
+  S.notes[nid] = 1;
+  $("noteBody").innerHTML = "<b>"+esc(LT(n.title))+"</b>"+esc(LT(n.body));
+  sfx("note"); refreshHud();
+  return waitModal("mNote");
+}
+function showCloseup(cid){
+  $("cuImg").src = IMG[cid] || cid;
+  $("cuImg").onerror = function(){ this.style.display="none"; };
+  $("cuImg").style.display = "block";
+  return waitModal("mCloseup");
+}
+function doScare(img){
+  if(!S.scares) return Promise.resolve();
+  return new Promise(res=>{
+    const el = $("scare"), im = $("scareImg");
+    im.src = IMG[img] || img;
+    el.style.display = "block";
+    $("flash").style.opacity = "1";
+    setTimeout(()=>{ $("flash").style.transition=".22s"; $("flash").style.opacity="0"; }, 40);
+    document.body.classList.add("shake");
+    sfx("scare");
+    setTimeout(()=>{ document.body.classList.remove("shake"); }, 500);
+    setTimeout(()=>{ el.style.display="none"; $("flash").style.transition=""; res(); }, 1150);
+  });
+}
+async function runCode(lockId){
+  const lock = LOCKS[lockId];
+  const okc = await showCode(lockId);
+  if(okc){ S.flags["code_"+lockId] = 1; await run(lock.then || []); }
+}
+async function run(steps){
+  if(!steps) return;
+  for(const s of steps){
+    if(s.if && !ok(s.if)) continue;
+    if(s.once){ const k = "_once_"+s.once; if(S.flags[k]) continue; S.flags[k] = 1; }
+    if(s.say)     await waitSay(s.say);
+    if(s.closeup) await showCloseup(s.closeup);
+    if(s.note)    await showNote(s.note);
+    if(s.scare)   await doScare(s.scare);
+    if(s.take)    give(s.take);
+    if(s.ev)      giveEv(s.ev);
+    if(s.set)     S.flags[s.set] = 1;
+    if(s.code)    await runCode(s.code);
+    if(s.puzzle)  await showRanat();
+    if(s.goto)  { await goTo(s.goto); save(); return; }
+    if(s.accuse)  await showAccuse();
+    save();
+  }
+  refreshHud();
+}
+function give(id){ if(S.items[id]) return; S.items[id]=1;
+  toast(L("gotItem")+" "+LT(ITEMS[id].name)); sfx("good"); refreshHud(); refreshBag(); }
+function giveEv(id){ if(S.ev[id]) return; S.ev[id]=1;
+  toast(L("gotEvidence")+" "+LT(EVIDENCE[id].name)); sfx("good"); refreshHud(); }
+
+/* ============================ scene ============================ */
+let reveal = false;
+async function goTo(id){
+  S.scene = id; sfx("step");
+  const sc = SCENES[id];
+  sceneImg.style.opacity = "0";
+  await new Promise(r=>setTimeout(r,220));
+  sceneImg.onerror = ()=>{ $("missing").style.display="flex";
+    $("missing").querySelector("b").textContent = LT(sc.name);
+    $("missing").querySelector("span").textContent = L("imgMissing"); sceneImg.style.opacity="0"; };
+  sceneImg.onload  = ()=>{ $("missing").style.display="none"; sceneImg.style.opacity="1"; };
+  $("missing").style.display = "none";
+  $("where").textContent = "· · ·";
+  sceneImg.src = IMG[sc.img] || sc.img;
+  prefetch(sc);
+  drawHots();
+  $("where").textContent = LT(sc.name);
+  refreshHud();
+  save();
+  await run(sc.onEnter || []);
+  drawHots();
+}
+const warmed = new Set();
+function warm(key){
+  const u = IMG[key]; if(!u || warmed.has(key)) return;
+  warmed.add(key); const i = new Image(); i.decoding = "async"; i.src = u;
+}
+// Pull in whatever this room can lead to, so moving between rooms is instant.
+function prefetch(sc){
+  (sc.hotspots||[]).forEach(h=>(h.do||[]).forEach(st=>{
+    if(st.goto && SCENES[st.goto]) warm(SCENES[st.goto].img);
+    if(st.closeup) warm(st.closeup);
+    if(st.scare)   warm(st.scare);
+  }));
+  Object.values(LOCKS).forEach(l => (l.then||[]).forEach(st=>{ if(st.closeup) warm(st.closeup); }));
+}
+function drawHots(){
+  const sc = SCENES[S.scene]; hots.innerHTML = "";
+  (sc.hotspots||[]).forEach(h=>{
+    if(h.show && !ok(h.show)) return;
+    const d = document.createElement("div");
+    d.className = "hs" + (h.kind==="door" ? " door" : "") + (reveal ? " reveal" : "");
+    d.dataset.id = h.id;
+    d.style.left = h.x+"%"; d.style.top = h.y+"%"; d.style.width = h.w+"%"; d.style.height = h.h+"%";
+    d.innerHTML = '<span class="tip"></span>';
+    d.querySelector(".tip").textContent = LT(h.label);
+    d.addEventListener("click", async ()=>{
+      if(busy) return; busy = true; ambient();
+      sfx("click");
+      await run(h.do || [{ say:{th:L("nothingHere"),en:L("nothingHere")} }]);
+      drawHots(); busy = false;
+    });
+    hots.appendChild(d);
+  });
+}
+// Using an item = tapping it in the bag bar. Most items work by simply being carried.
+async function useItem(id){
+  if(busy) return; busy = true; sfx("click"); ambient();
+  if(id === "battery" && !S.flags.fl_full && S.items.flashlight){
+    S.flags.fl_full = 1; sfx("good"); save();
+    await waitSay({th:"ฉันใส่ถ่านใหม่ ลำแสงนิ่งขึ้นมาก\nตอนนี้ส่องขึ้นบันไดที่มืดสนิทได้แล้ว",
+                   en:"New cells in. The beam steadies.\nNow it will reach up that pitch-black stairwell."});
+  } else {
+    await waitSay(ITEMS[id].desc);
+  }
+  drawHots(); refreshBag(); busy = false;
+}
+
+/* ============================ hud / bag ============================ */
+function refreshHud(){
+  const evN = Object.keys(S.ev).length, concN = Object.keys(S.conc).length;
+  $("bBag").innerHTML  = L("bag")  + (Object.keys(S.items).length ? ' <i>'+Object.keys(S.items).length+'</i>' : "");
+  $("bCase").innerHTML = L("casefile") + (evN ? ' <i>'+evN+'/6</i>' : "");
+  $("hint").textContent = L("showHotspots");
+  $("where").textContent = LT(SCENES[S.scene].name);
+  document.documentElement.lang = S.lang;
+}
+function refreshBag(){
+  const b = $("bag"); b.innerHTML = "";
+  Object.keys(S.items).forEach(id=>{
+    const d = document.createElement("div");
+    d.className = "slot" + (id==="battery" && !S.flags.fl_full ? " on" : "");
+    d.dataset.item = id;
+    d.textContent = LT(ITEMS[id].name);
+    d.addEventListener("click", ()=> useItem(id));
+    b.appendChild(d);
+  });
+}
+
+/* ============================ case file ============================ */
+let pick = [];
+/* ==================== สมุดคดี — แฟ้ม 3 มิติ ====================
+   กลไกเดิมคงไว้ครบ: เลือกหลักฐาน 2 ชิ้น -> จับคู่เป็นข้อสรุป
+   ที่เปลี่ยนคือมันกลายเป็นแฟ้มจริงที่เปิดอ่าน พลิกหน้า และหยิบของขึ้นมาดูได้
+   ============================================================ */
+const dEVIMG = {"E1":"g1","E2":"g2","E3":"g3","E4":"g4","E5":"g5","E6":"g6"};
+const dEVNO  = {E1:"๐๑",E2:"๐๒",E3:"๐๓",E4:"๐๔",E5:"๐๕",E6:"๐๖"};
+const dSUSIMG= {"rewind":"", "forward":"", "stop":""};
+const dSTR = {
+  cover:{th:"แฟ้มหอนาฬิกา · ๒๕๓๐",en:"TOWER FILE · 1987"},
+  coverS:{th:"THE THIRTEENTH CHIME",en:"THE THIRTEENTH CHIME"},
+  stampOpen:{th:"ยังไม่ครบ",en:"INCOMPLETE"},
+  stampDone:{th:"ครบแล้ว",en:"COMPLETE"},
+  openIt:{th:"คลิกที่แฟ้มเพื่อเปิด",en:"Click the file to open"},
+  sheetOf:{th:"แผ่นที่",en:"Sheet"},
+  emptyInfo:{th:"คลิกเฟืองเพื่อหยิบขึ้นมาดูขอบที่สลักไว้<br>เลือกสองตัวที่ฟันเท่ากัน แล้วมันจะอ่านออกเป็นประโยค",
+             en:"Click a gear to lift it and read the rim.<br>Pick two with the same tooth count and the engraving becomes a sentence."},
+  hint1:{th:"หยิบขึ้นมาดู",en:"lift it out"},
+  hint2:{th:"หมุนแฟ้ม",en:"turn the file"},
+  hint3:{th:"พลิกหน้า",en:"turn the page"},
+  pgEv:{th:"เฟือง",en:"GEARS"},
+  pgConc:{th:"สิ่งที่อ่านออก",en:"WHAT IT READS"},
+  pgSus:{th:"เข็มนาฬิกา",en:"THE HANDS"},
+  pgDoc:{th:"เอกสารที่อ่านแล้ว",en:"DOCUMENTS READ"},
+  brief:{th:"เรื่องที่เกิดขึ้น",en:"THE SITUATION"},
+  briefBody:{th:"๐๐:๐๐ น. · หอสมุดชั้นสอง\nหอนาฬิกาตีสิบสามครั้ง\nประตูทุกบานในมหาวิทยาลัยล็อกพร้อมกัน",
+            en:"00:00 · library, second floor\nThe tower struck thirteen.\nEvery door on campus locked at once."},
+  briefNote:{th:"เฟืองหกตัว ซ่อนไว้ตึกละตัว\nจับคู่ตัวที่ฟันเท่ากัน แล้วจะรู้ว่าต้องหมุนไปทางไหน",
+             en:"Six gears. One per building.\nMesh the matching pairs and you will know which way to turn."},
+  noDoc:{th:"ยังไม่ได้อ่านเอกสารอะไรเลย",en:"No documents read yet."},
+  bond:{th:"จารึกใต้อนุสาวรีย์",en:"SCRATCHED UNDER THE STATUE"},
+  bondBody:{th:"“เสียงที่สิบสามไม่ใช่ความผิดพลาด<br>มันคือคนหนึ่งคน”",
+            en:"“The thirteenth is not a fault.<br>It is a person.”"}
+};
+const dT = k => LT(dSTR[k]);
+
+let dSpread=0, dOpened=false, dBusy=false, dSheetsA=[], dRAF=0, dLive=false;
+const dPOS=[{l:"8%",t:"22%",w:"44%",r:-3.2,z:6},{l:"49%",t:"48%",w:"40%",r:2.6,z:11}];
+const dPOS4=[{l:"5%",t:"20%",w:"43%",r:-1.6,z:5},{l:"52%",t:"25%",w:"43%",r:1.8,z:9},
+             {l:"7%",t:"56%",w:"43%",r:1.2,z:6},{l:"50%",t:"61%",w:"43%",r:-1.4,z:10}];
+const dPOS3=[{l:"8%",t:"20%",w:"80%",r:-1,z:5},{l:"11%",t:"46%",w:"79%",r:1.4,z:8},
+             {l:"7%",t:"72%",w:"80%",r:-.8,z:6}];
+
+function dEvHTML(k,p){
+  if(!S.ev[k]) return '<div class="dslot dlock" style="--r:'+p.r+'deg;left:'+p.l+';top:'+p.t+
+    ';width:'+p.w+';aspect-ratio:1.1/1">— — —</div>';
+  const e=EVIDENCE[k], src=IMG[dEVIMG[k]]||"";
+  return '<div class="dslot dev'+(pick.includes(k)?' sel':'')+'" data-ev="'+k+'" style="--r:'+p.r+
+    'deg;--z:'+p.z+'px;left:'+p.l+';top:'+p.t+';width:'+p.w+'">'+
+    '<div class="ddoc"><div class="dtape"></div>'+
+    '<img src="'+src+'" alt="" onerror="this.style.visibility=\'hidden\'">'+
+    '<div class="dlab">'+esc(LT(e.name))+'</div><div class="dtab">'+dEVNO[k]+'</div></div></div>';
+}
+function dPages(){
+  const EK=Object.keys(EVIDENCE), pages=[];
+  for(let i=0;i<EK.length;i+=2){
+    pages.push('<h5>'+dT('pgEv')+' '+dEVNO[EK[i]]+' – '+dEVNO[EK[i+1]]+'</h5>'+
+      dEvHTML(EK[i],dPOS[0])+dEvHTML(EK[i+1],dPOS[1])+
+      (i===0?'<div class="dclip" style="right:7%;top:8%"></div>':''));
+  }
+  /* ข้อสรุป */
+  let c='<h5>'+dT('pgConc')+' · '+Object.keys(S.conc).length+'/3</h5>';
+  Object.keys(CONCLUSIONS).forEach((k,i)=>{
+    const p=dPOS3[i], got=S.conc[k];
+    c += got
+      ? '<div class="dslot" style="--r:'+p.r+'deg;--z:'+p.z+'px;left:'+p.l+';top:'+p.t+';width:'+p.w+'">'+
+        '<div class="dconc"><b>✓ '+esc(LT(CONCLUSIONS[k].name))+'</b><small>'+
+        esc(LT(CONCLUSIONS[k].text))+'</small></div></div>'
+      : '<div class="dslot dlock" style="--r:'+p.r+'deg;left:'+p.l+';top:'+p.t+';width:'+p.w+
+        ';height:20%">? ? ?</div>';
+  });
+  pages.push(c);
+  /* ผู้ต้องสงสัย */
+  let u='<h5>'+dT('pgSus')+'</h5>';
+  Object.keys(SUSPECTS).forEach((k,i)=>{
+    const p=dPOS4[i], src=IMG[dSUSIMG[k]]||"";
+    u += '<div class="dslot" style="--r:'+p.r+'deg;--z:'+p.z+'px;left:'+p.l+';top:'+p.t+';width:'+p.w+'">'+
+      '<div class="dcardp"><img src="'+src+'" alt="" onerror="this.style.visibility=\'hidden\'">'+
+      '<div class="tx"><b>'+esc(LT(SUSPECTS[k].name))+'</b><small>'+esc(LT(SUSPECTS[k].role))+
+      '</small></div></div></div>';
+  });
+  pages.push(u);
+  /* ความสัมพันธ์ + เอกสาร */
+  let d='<h5>'+dT('bond')+'</h5>';
+  let rows='';
+  const dROM=(typeof ROMANCE!=="undefined")?ROMANCE:null;
+  (dROM?Object.keys(dROM).filter(k=>k!=="none"):[]).forEach(k=>{
+    const v=(S.aff&&S.aff[k])||0;
+    rows += esc(LT(ROMANCE[k].name))+' &nbsp; <span style="letter-spacing:.24em;color:'+
+      (v>=3?'#a8506c':'#8b8578')+'">'+'♥'.repeat(v)+'○'.repeat(Math.max(0,5-v))+'</span><br>';
+  });
+  if(!rows) rows = dT('bondBody');
+  d += '<div class="dslot dnote" style="--r:-1deg;--z:5px;left:9%;top:20%;width:74%">'+rows+'</div>';
+  d += '<h5 style="position:absolute;left:8%;right:8%;top:46%">'+dT('pgDoc')+'</h5>';
+  const nk=Object.keys(S.notes).filter(k=>NOTES[k]);
+  if(!nk.length){
+    d += '<div class="dslot dnote" style="--r:1deg;--z:5px;left:11%;top:56%;width:70%">'+
+         dT('noDoc')+'</div>';
+  }else{
+    nk.slice(0,5).forEach((k,i)=>{
+      d += '<div class="dslot dnote" data-note="'+k+'" style="--r:'+((i%2)?1.2:-1.4)+
+        'deg;--z:'+(5+i)+'px;left:'+(9+(i%2)*5)+'%;top:'+(56+i*8)+'%;width:74%;padding:7px 11px">'+
+        esc(LT(NOTES[k].title))+'</div>';
+    });
+  }
+  pages.push(d);
+  return pages;
+}
+function dBuildRight(){
+  const done=Object.keys(S.conc).length>=3;
+  $("dPgR").innerHTML =
+    '<div class="dslot dsticky" style="--r:2deg;--z:8px;left:16%;top:38%;width:62%">'+
+      (done ? LT({th:"ครบสามข้อสรุปแล้ว<br>ไปหาคนที่ต้องคุยได้",en:"All three conclusions.<br>Time to go find them."})
+            : LT({th:"ยังต่อไม่ครบ<br>กลับไปหาต่อ",en:"Not enough yet.<br>Go back and look."}))+'</div>';
+}
+function dBuildLeft(){
+  $("dPgL").innerHTML =
+    '<h5>'+dT('brief')+'</h5>'+
+    '<div class="dslot dnote dtyped" style="--r:.8deg;--z:4px;left:9%;top:23%;width:78%">'+
+      esc(dT('briefBody')).replace(/\n/g,'<br>')+'</div>'+
+    '<div class="dslot dsticky" style="--r:-3deg;--z:9px;left:20%;top:62%;width:58%">'+
+      esc(dT('briefNote')).replace(/\n/g,'<br>')+'</div>'+
+    '<div class="dclip dark" style="left:7%;top:15%"></div>';
+}
+const dEase = t => t<.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
+function dApply(sh,p){
+  sh.p=p;
+  const bow=Math.sin(Math.PI*p), lift=bow*26, wob=Math.sin(Math.PI*p*2)*1.1*(p>.5?1:.4);
+  sh.el.style.transform='translateZ('+lift.toFixed(2)+'px) rotateY('+(-179.4*p).toFixed(2)+
+    'deg) rotateZ('+wob.toFixed(2)+'deg)';
+  sh.paper.style.transform='rotateY('+(-bow*13).toFixed(2)+'deg)';
+  const x=(-15+130*p), a=(bow*.55).toFixed(3);
+  sh.gloss.forEach(g=>{ g.style.opacity=bow?1:0;
+    g.style.background='linear-gradient(102deg,rgba(0,0,0,'+(bow*.22).toFixed(3)+') '+(x-46)+
+      '%,rgba(255,255,255,'+a+') '+x+'%,rgba(0,0,0,'+(bow*.16).toFixed(3)+') '+(x+44)+'%)'; });
+}
+function dZ(){ dSheetsA.forEach((sh,i)=> sh.el.style.zIndex = sh.p>.5 ? (i+1) : (dSheetsA.length-i+1)); }
+function dNavUp(){
+  const N=dSheetsA.length;
+  $("dPrev").disabled = !dOpened||dBusy||dSpread===0;
+  $("dNext").disabled = !dOpened||dBusy||dSpread===N;
+  $("dPageNo").textContent = dOpened ? dT('sheetOf')+' '+Math.min(dSpread+1,N)+' / '+N : "";
+}
+function dFlip(i,to){
+  const sh=dSheetsA[i], from=sh.p, t0=performance.now();
+  dBusy=true; sh.el.style.zIndex=99;
+  (function step(now){
+    const t=Math.min(1,(now-t0)/1080);
+    dApply(sh, from+(to-from)*dEase(t));
+    if(t<1) requestAnimationFrame(step); else { dBusy=false; dZ(); dNavUp(); sfx("click"); }
+  })(t0);
+}
+function dNext(){ const N=dSheetsA.length; if(!dOpened||dBusy||dSpread>=N)return; dFlip(dSpread,1); dSpread++; dNavUp(); }
+function dPrev(){ if(!dOpened||dBusy||dSpread<=0)return; dSpread--; dFlip(dSpread,0); dNavUp(); }
+function dGoPage(i){ const s=(i%2===0)? i/2 : (i+1)/2; while(dSpread<s){dSheetsA[dSpread]&&dApply(dSheetsA[dSpread],1);dSpread++;} dZ(); dNavUp(); }
+
+function dInfoEmpty(){ $("dInfo").innerHTML = '<div class="e">'+dT('emptyInfo')+'</div>'; }
+function dBuild(keepSpread){
+  const pages=dPages(), N=Math.ceil(pages.length/2), box=$("dSheets");
+  box.innerHTML="";
+  for(let i=0;i<N;i++){
+    const el=document.createElement("div"); el.className="dsheet";
+    el.innerHTML='<div class="dpaper">'+
+      '<div class="dface f"><div class="dpg">'+(pages[i*2]||"")+'</div><div class="dgloss"></div></div>'+
+      '<div class="dface b"><div class="dpg">'+(pages[i*2+1]||"")+'</div><div class="dgloss"></div></div>'+
+      '</div>';
+    box.appendChild(el);
+  }
+  dSheetsA=[...box.children].map(el=>({el,paper:el.querySelector(".dpaper"),
+    gloss:[...el.querySelectorAll(".dgloss")],p:0}));
+  dBuildLeft(); dBuildRight();
+  const keep = keepSpread ? Math.min(dSpread,N) : 0;
+  dSpread=0; dSheetsA.forEach(sh=>dApply(sh,0));
+  while(dSpread<keep){ dApply(dSheetsA[dSpread],1); dSpread++; }
+  dZ(); dNavUp();
+  $("dCount").innerHTML = L("evidence")+' <b>'+Object.keys(S.ev).length+'</b>/6 &nbsp;·&nbsp; '+
+    L("conclusions")+' <b>'+Object.keys(S.conc).length+'</b>/3';
+}
+function dTryLink(){
+  if(pick.length<2) return;
+  const [a,c]=pick;
+  const hit=Object.keys(CONCLUSIONS).find(k=>{
+    const p=CONCLUSIONS[k].pair; return !S.conc[k] && p.includes(a) && p.includes(c); });
+  pick=[];
+  setTimeout(()=>{
+    if(hit){ S.conc[hit]=1; sfx("good"); save();
+      toast(L("linkRight")+" "+LT(CONCLUSIONS[hit].name));
+      dBuild(false); dGoPage(3);
+      $("dInfo").innerHTML='<div class="n">'+esc(LT(CONCLUSIONS[hit].name))+'</div>'+
+        '<p>'+esc(LT(CONCLUSIONS[hit].text))+'</p>';
+    } else { sfx("bad"); toast(L("linkWrong")); dBuild(true); dInfoEmpty(); }
+  },200);
+}
+function openCase(){
+  pick=[];
+  $("caseT").textContent = L("casefile");
+  $("dCovT").textContent = dT('cover');
+  $("dCovS").textContent = dT('coverS');
+  $("dCovStamp").textContent = Object.keys(S.conc).length>=3 ? dT('stampDone') : dT('stampOpen');
+  $("dHintOpen").textContent = dT('openIt');
+  $("dCloseT").textContent = L("btnClose");
+  $("dH1").textContent=dT('hint1'); $("dH2").textContent=dT('hint2'); $("dH3").textContent=dT('hint3');
+  dOpened=false; dBusy=false; dSpread=0;
+  $("dCover").classList.remove("open");
+  $("dBook").classList.remove("opened");
+  $("dHintOpen").style.display="";
+  dBuild(false); dInfoEmpty();
+  openM("mCase"); dStartLoop();
+}
+function dCloseCase(){ dLive=false; cancelAnimationFrame(dRAF); closeM("mCase"); }
+
+/* --- เปิดปก / หยิบของ / หมุนแฟ้ม --- */
+let dDrag=false,dMoved=false,dRX=7,dRY=-16,dTX=7,dTY=-16,dSX=0,dSY=0,dBX=0,dBY=0,dT0=0;
+function dStartLoop(){
+  dLive=true; dT0=performance.now();
+  const bk=$("dBook");
+  (function loop(now){
+    if(!dLive) return;
+    const t=(now-dT0)/1000;
+    if(!dDrag){ dTY+=(-16+Math.sin(t*.21)*1.7-dTY)*.04; dTX+=(7+Math.cos(t*.17)*1.1-dTX)*.04; }
+    dRX+=(dTX-dRX)*.09; dRY+=(dTY-dRY)*.09;
+    bk.style.transform='rotateX('+dRX.toFixed(2)+'deg) rotateY('+dRY.toFixed(2)+'deg)';
+    dRAF=requestAnimationFrame(loop);
+  })(performance.now());
+}
+(function wireDossier(){
+  const bk=$("dBook");
+  bk.addEventListener("pointerdown",e=>{ if(e.target.closest(".dnav"))return;
+    dDrag=true;dMoved=false;bk.classList.add("grab");
+    dSX=e.clientX;dSY=e.clientY;dBX=dRY;dBY=dRX; });
+  addEventListener("pointermove",e=>{ if(!dDrag)return;
+    if(Math.abs(e.clientX-dSX)+Math.abs(e.clientY-dSY)>5)dMoved=true;
+    dTY=Math.max(-46,Math.min(14,dBX+(e.clientX-dSX)*.17));
+    dTX=Math.max(-8,Math.min(26,dBY-(e.clientY-dSY)*.11)); });
+  const rel=()=>{ dDrag=false;bk.classList.remove("grab");setTimeout(()=>dMoved=false,60); };
+  addEventListener("pointerup",rel); addEventListener("pointercancel",rel);
+
+  $("dCover").addEventListener("click",()=>{
+    if(dMoved||dOpened)return;
+    dOpened=true; sfx("click");
+    $("dCover").classList.add("open"); bk.classList.add("opened");
+    $("dHintOpen").style.display="none"; setTimeout(dNavUp,260);
+  });
+  $("dNext").addEventListener("click",e=>{e.stopPropagation();dNext()});
+  $("dPrev").addEventListener("click",e=>{e.stopPropagation();dPrev()});
+  $("dClose").addEventListener("click",dCloseCase);
+
+  $("mCase").addEventListener("click",e=>{
+    if(dMoved)return;
+    const nt=e.target.closest("[data-note]");
+    if(nt){ dCloseCase(); showNote(nt.dataset.note); return; }
+    const ev=e.target.closest("[data-ev]");
+    if(!ev) return;
+    const k=ev.dataset.ev, i=pick.indexOf(k);
+    if(i>=0) pick.splice(i,1); else { pick.push(k); if(pick.length>2) pick.shift(); }
+    sfx("click");
+    document.querySelectorAll("#mCase .dslot[data-ev]").forEach(n=>
+      n.classList.toggle("sel", pick.includes(n.dataset.ev)));
+    const e2=EVIDENCE[k];
+    $("dInfo").innerHTML='<div class="n">'+dEVNO[k]+' / ๐๖</div><h3>'+esc(LT(e2.name))+
+      '</h3><p>'+esc(LT(e2.desc))+'</p>';
+    dTryLink();
+  });
+  addEventListener("keydown",e=>{
+    if($("mCase").style.display!=="flex")return;
+    if(e.key==="ArrowRight")dNext();
+    if(e.key==="ArrowLeft")dPrev();
+    if(e.key==="Escape")dCloseCase();
+  });
+})();
+
+/* ============================ bag modal ============================ */
+function openBag(){
+  $("bagT").textContent = L("bag");
+  const b = $("bagBody"); b.innerHTML = "";
+  const ks = Object.keys(S.items);
+  if(!ks.length){ b.innerHTML = '<p class="muted">'+esc(L("bagEmpty"))+"</p>"; }
+  ks.forEach(k=>{
+    const c = document.createElement("div"); c.className="card"; c.style.cursor="default";
+    c.innerHTML = "<b>"+esc(LT(ITEMS[k].name))+"</b><small>"+esc(LT(ITEMS[k].desc))+"</small>";
+    b.appendChild(c);
+  });
+  openM("mBag");
+}
+
+/* ============================ code lock ============================ */
+function showCode(lockId){
+  const lock = LOCKS[lockId];
+  return new Promise(res=>{
+    let buf = "";
+    $("codeT").textContent = L("lockedTitle");
+    $("codeP").textContent = LT(lock.prompt) + "\n\n" + LT(lock.hint);
+    $("codeMsg").textContent = "";
+    const dial = $("dial"); const paint = ()=>{
+      dial.innerHTML = "";
+      for(let i=0;i<lock.digits;i++){ const s=document.createElement("span");
+        s.textContent = buf[i] || "·"; dial.appendChild(s); }
+    };
+    const pad = $("pad"); pad.innerHTML = "";
+    ["1","2","3","4","5","6","7","8","9","←","0","OK"].forEach(t=>{
+      const btn = document.createElement("button"); btn.textContent = t;
+      btn.addEventListener("click", ()=>{
+        sfx("click");
+        if(t==="←") buf = buf.slice(0,-1);
+        else if(t==="OK"){
+          if(buf === lock.answer){ $("codeMsg").textContent = L("codeRight"); sfx("good");
+            setTimeout(()=>{ closeM("mCode"); res(true); }, 620); return; }
+          $("codeMsg").textContent = L("codeWrong"); sfx("bad"); buf = "";
+        }
+        else if(buf.length < lock.digits) buf += t;
+        paint();
+      });
+      pad.appendChild(btn);
+    });
+    paint(); openM("mCode");
+    const iv = setInterval(()=>{ if($("mCode").style.display==="none"){ clearInterval(iv); res(buf===lock.answer); } },150);
+  });
+}
+
+/* ============================ ranat puzzle ============================ */
+function showRanat(){
+  return new Promise(res=>{
+    let seq = [];
+    $("ranatT").textContent = LT({th:"เปียโน — ห้าตัวบนกระดาน",en:"The piano — the five on the board"});
+    $("ranatP").textContent = LT({
+      th:"แปดคีย์ เรียงจากเสียงต่ำไปสูง (ซ้าย = ๑)\nกระดานดำข้างหลังเขียนลำดับไว้แล้ว",
+      en:"Eight keys, low to high (leftmost = 1).\nThe blackboard behind you already has the order."});
+    $("ranatMsg").textContent = "";
+    const wrap = $("bars"); wrap.innerHTML = "";
+    for(let i=1;i<=RANAT.bars;i++){
+      const bar = document.createElement("i");
+      bar.style.height = (46 + i*12) + "%";
+      bar.addEventListener("click", ()=>{
+        noteTone(i); bar.classList.add("hit"); setTimeout(()=>bar.classList.remove("hit"),130);
+        seq.push(i); if(seq.length > RANAT.answer.length) seq.shift();
+        if(seq.length === RANAT.answer.length && seq.every((v,j)=>v===RANAT.answer[j])){
+          S.flags.ranat_ok = 1; save(); sfx("good");
+          $("ranatMsg").textContent = LT({th:"ลิ้นชักข้างเปียโนดังคลิก แล้วเลื่อนออกมาเอง",
+                                          en:"The drawer beside the piano clicks, and slides open on its own."});
+          setTimeout(()=>{ closeM("mRanat"); res(); }, 1100);
+        }
+      });
+      wrap.appendChild(bar);
+    }
+    openM("mRanat");
+    const iv = setInterval(()=>{ if($("mRanat").style.display==="none"){ clearInterval(iv); res(); } },150);
+  });
+}
+
+/* ============================ accuse / endings ============================ */
+function showAccuse(){
+  return new Promise(res=>{
+    $("accT").textContent = L("accuseTitle");
+    $("accP").textContent = L("accuseWarn");
+    const b = $("accBody"); b.innerHTML = "";
+    Object.keys(SUSPECTS).forEach(k=>{
+      const c = document.createElement("div"); c.className="card";
+      const ph = SUSPECTS[k].img && IMG[SUSPECTS[k].img];
+      c.style.cssText = "display:flex;gap:12px;align-items:center";
+      c.innerHTML = (ph ? '<img src="'+ph+'" alt="" style="width:74px;height:96px;object-fit:cover;object-position:50% 22%;border-radius:9px;flex:0 0 auto;background:#0b1017">' : "")
+                  + "<span style=\'display:block\'><b>"+esc(LT(SUSPECTS[k].name))+"</b><small>"+esc(LT(SUSPECTS[k].role))+"</small></span>";
+      c.addEventListener("click", ()=>{ closeM("mAccuse"); finish(k); res(); });
+      b.appendChild(c);
+    });
+    openM("mAccuse");
+  });
+}
+function finish(who){
+  const full = Object.keys(S.ev).length === 6 && allConc();
+  const key = who === "rewind" ? (full ? "rewind_full" : "rewind_partial") : (ENDINGS[who] ? who : "forward");
+  const e = ENDINGS[key];
+  S.done = key; save();
+  sfx(key==="rewind_full" ? "good" : "bad");
+  const ei = $("endImg");
+  if(e.img && IMG[e.img]){ ei.src = IMG[e.img]; ei.style.display="block"; } else { ei.style.display="none"; }
+  $("endT").textContent = LT(e.title);
+  $("endBody").textContent = LT(e.body);
+  const mins = Math.round((S.ms + (performance.now()-started)) / 60000);
+  $("endStats").textContent = L("timePlayed")+": "+mins+" min · "+L("evidenceFound")+": "+Object.keys(S.ev).length+"/6";
+  $("bAgain").textContent = L("playAgain");
+  openM("mEnd");
+}
+$("bAgain").addEventListener("click", ()=>{ wipe(); location.reload(); });
+
+/* ============================ settings ============================ */
+function openSet(){
+  $("setT").textContent = L("btnSettings");
+  const b = $("setBody"); b.innerHTML = "";
+  const row = (label, btnTxt, fn) => {
+    const d = document.createElement("div"); d.className = "row";
+    d.style.cssText = "align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)";
+    const s = document.createElement("div"); s.textContent = label; s.style.fontSize="14px";
+    const bt = document.createElement("button"); bt.className="btn"; bt.textContent = btnTxt;
+    bt.addEventListener("click", ()=>{ fn(); sfx("click"); openSet(); });
+    d.appendChild(s); d.appendChild(bt); b.appendChild(d);
+  };
+  row(L("lang"), S.lang==="th" ? "ไทย" : "English", ()=>{ S.lang = S.lang==="th"?"en":"th"; save(); refreshAll(); });
+  row(L("jumpscare"), S.scares ? L("jumpOn") : L("jumpOff"), ()=>{ S.scares = !S.scares; save(); });
+  row(L("sound"), S.sound ? L("jumpOn") : L("jumpOff"), ()=>{
+    S.sound = !S.sound; save();
+    if(amb && AC) amb.gain.linearRampToValueAtTime(S.sound ? .16 : 0, AC.currentTime + .4);
+  });
+  row(L("difficulty"), EASY ? L("easyMode") : L("hardMode"), ()=>{
+    EASY = !EASY;
+    try{ localStorage.setItem("chime13-easy", EASY ? "1" : "0"); }catch(e){}
+    applyMode();
+  });
+  row(L("btnHowTo"), "?", ()=>{ closeM("mSet"); showNote0(L("btnHowTo"), L("howToBody")); });
+  row(L("reset"), "⟲", ()=>{ if(confirm(L("resetConfirm"))){ wipe(); location.reload(); } });
+  openM("mSet");
+}
+function showNote0(title, body){
+  $("noteBody").innerHTML = "<b>"+esc(title)+"</b>"+esc(body); openM("mNote");
+}
+
+/* ============================ misc ============================ */
+function esc(s){ return String(s).replace(/[&<>]/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c])); }
+function refreshAll(){
+  refreshHud(); refreshBag(); drawHots();
+  $("tTitle").textContent = L("title"); $("tSub").textContent = L("subtitle");
+  $("tNew").textContent = L("btnNew"); $("tCont").textContent = L("btnContinue");
+  $("tHow").textContent = L("btnHowTo");
+  $("tSet").textContent = L("btnSettings");
+}
+
+$("bBag").addEventListener("click", ()=>{ sfx("click"); openBag(); });
+$("bCase").addEventListener("click", ()=>{ sfx("click"); openCase(); });
+$("bSet").addEventListener("click", ()=>{ sfx("click"); openSet(); });
+$("bLang").addEventListener("click", ()=>{ S.lang = S.lang==="th"?"en":"th"; save(); sfx("click"); refreshAll(); });
+$("hint").addEventListener("click", ()=>{ reveal = !reveal; sfx("click"); drawHots(); });
+$("tLang").addEventListener("click", ()=>{ S.lang = S.lang==="th"?"en":"th"; sfx("click"); refreshAll(); });
+$("tHow").addEventListener("click", ()=>{ sfx("click"); showNote0(L("btnHowTo"), L("howToBody")); });
+
+document.addEventListener("keydown", e=>{
+  if(e.code==="KeyH"){ reveal = !reveal; drawHots(); }
+  if(e.code==="KeyI"){ openBag(); }
+  if(e.code==="KeyC"){ openCase(); }
+});
+
+
+/* ---------- โหมดมือถือแนวตั้ง: ภาพบน + แผงกดล่าง ---------- */
+(function mobileMode(){
+  const mob = $("mob"), frame = $("frame");
+  if(!mob) return;
+  const portrait = () => matchMedia("(orientation:portrait) and (max-width:820px)").matches;
+  let inPanel = null;
+
+  function place(){
+    const p = portrait();
+    if(p === inPanel) return;
+    inPanel = p;
+    if(p){ mob.appendChild($("say")); mob.appendChild($("bag")); mob.appendChild($("hud")); }
+    else  { frame.appendChild($("hud")); frame.appendChild($("bag")); frame.appendChild($("say")); }
+  }
+
+  /* มีบทพูดอยู่ → ซ่อนรายการจุดกด ให้อ่านสบายเหมือนนิยายภาพ */
+  try{
+    new MutationObserver(()=>{
+      mob.classList.toggle("talking", getComputedStyle($("say")).display !== "none");
+    }).observe($("say"), {attributes:true, attributeFilter:["style"]});
+  }catch(e){}
+
+  /* จอสัมผัส — เปลี่ยนคำว่า "คลิก" เป็น "แตะ" ให้ตรงกับที่ผู้เล่นทำจริง */
+  if(matchMedia("(pointer:coarse)").matches){
+    const k1=$("dK1"), k2=$("dK2");
+    if(k1) k1.textContent = "แตะ";
+    if(k2) k2.textContent = "ลากนิ้ว";
+  }
+
+  addEventListener("resize", place);
+  addEventListener("orientationchange", ()=> setTimeout(place, 260));
+  place();
+})();
+
+
+/* ---------- เลือกระดับความยากก่อนเข้าเล่น ---------- */
+/* ง่าย = โชว์เส้นจุดที่กดได้ตลอด · ยาก = ไม่มีให้เลย (ปุ่ม "แสดงจุดที่กดได้" หายไปด้วย)
+   เก็บนอก S เพราะ beginNow() ล้าง S ทิ้งทุกครั้งที่เริ่มเกมใหม่ */
+let EASY = true;
+try{ const v = localStorage.getItem("chime13-easy"); if(v !== null) EASY = (v === "1"); }catch(e){}
+
+function applyMode(){
+  reveal = EASY;
+  const h = $("hint"); if(h) h.style.display = EASY ? "" : "none";
+  try{ drawHots(); }catch(e){}
+}
+function askMode(next){
+  const pick = v => {
+    EASY = v;
+    try{ localStorage.setItem("chime13-easy", v ? "1" : "0"); }catch(e){}
+    applyMode(); closeM("mMode"); next();
+  };
+  $("mdEasy").onclick  = ()=>{ sfx("click"); pick(true); };
+  $("mdHard").onclick  = ()=>{ sfx("click"); pick(false); };
+  openM("mMode");
+}
+{
+  const _begin = begin;
+  /* เริ่มใหม่ = ถามทุกครั้ง · เล่นต่อ = ใช้โหมดเดิม */
+  begin = function(cont){
+    if(cont){ applyMode(); _begin(true); }
+    else askMode(()=> _begin(false));
+  };
+}
+
+/* ---------- boot ---------- */
+(function initMenu(){
+  const bg=$("tBg"), wrap=$("tBgWrap"), cv=$("tDust"), cx=cv.getContext("2d");
+  bg.style.backgroundImage="url("+IMG.ui_title+")";
+  const im=new Image(); im.src=IMG.ui_title;
+  const show=()=>{ bg.classList.add("on"); $("title").classList.add("ready");
+    [...document.querySelectorAll("#tNav .titem")].forEach((b,i)=>
+      setTimeout(()=>b.classList.add("in"), 460+i*85)); };
+  im.onload=show; im.onerror=()=>{ bg.style.background="linear-gradient(160deg,#16202b,#05070a)"; show(); };
+  setTimeout(show,1800);
+  let motes=[];
+  const size=()=>{ cv.width=innerWidth; cv.height=innerHeight;
+    motes=Array.from({length:Math.round(innerWidth*innerHeight/32000)},()=>({
+      x:Math.random()*cv.width,y:Math.random()*cv.height,r:.5+Math.random()*1.6,
+      a:.05+Math.random()*.2,vy:-(.05+Math.random()*.15),ph:Math.random()*6.28,
+      sw:.15+Math.random()*.5})); };
+  size(); addEventListener("resize",()=>{ if($("title").style.display!=="none") size(); });
+  const t0=performance.now();
+  (function loop(now){
+    if($("title").style.display!=="none"){
+      const t=(now-t0)/1000, s7=.7, A=12;
+      const dx=Math.sin(t*.083*s7)*A+Math.sin(t*.031*s7)*A*.55;
+      const dy=Math.cos(t*.061*s7)*A*.65+Math.sin(t*.024*s7)*A*.4;
+      wrap.style.transform="translate("+dx.toFixed(2)+"px,"+dy.toFixed(2)+"px) scale("+
+        (1.06+Math.sin(t*.045*s7)*.008).toFixed(4)+")";
+      $("tShaft").style.opacity=(.45*(.72+Math.sin(t*.19)*.28)).toFixed(3);
+      cx.clearRect(0,0,cv.width,cv.height);
+      for(const m of motes){
+        m.y+=m.vy; m.x+=Math.sin(t*m.sw+m.ph)*.18;
+        if(m.y<-6){ m.y=cv.height+6; m.x=Math.random()*cv.width; }
+        cx.globalAlpha=m.a*(.55+Math.sin(t*1.4+m.ph)*.45);
+        cx.fillStyle="#fff"; cx.beginPath(); cx.arc(m.x,m.y,m.r,0,6.2832); cx.fill();
+      }
+      cx.globalAlpha=1;
+    }
+    requestAnimationFrame(loop);
+  })(performance.now());
+})();
+$("tSet").addEventListener("click", ()=>{ sfx("click"); openSet(); });
+
+window.__dbg = { state:()=>S, notes:NOTES, ev:EVIDENCE, items:ITEMS, scenes:SCENES,
+  locks:LOCKS, conc:CONCLUSIONS, endings:ENDINGS, save:()=>save(), wipe:()=>wipe(),
+  goTo:(id)=>{ goTo(id); return "ไปฉาก "+id; },
+  allEv:()=>{ Object.keys(EVIDENCE).forEach(k=>S.ev[k]=1); refreshHud(); save(); return "ปลดหลักฐานครบ"; },
+  allConc:()=>{ Object.keys(CONCLUSIONS).forEach(k=>S.conc[k]=1); refreshHud(); save(); return "ปลดข้อสรุปครบ"; },
+  allNotes:()=>{ Object.keys(NOTES).forEach(k=>S.notes[k]=1); save(); return "ปลดเอกสารครบ"; },
+  allItems:()=>{ Object.keys(ITEMS).forEach(k=>S.items[k]=1); refreshHud(); refreshBag(); save(); return "ปลดของครบ"; },
+  end:(who)=>{ finish(who); return "ตอนจบ "+who; } };
+const dev = new URLSearchParams(location.search).has("dev");
+if(dev) $("dev").style.display = "block";
+const prev = load();
+if(prev && !prev.done){ $("tCont").style.display = "inline-block"; }
+refreshAll();
+
+/* หน้าโหลด — ขึ้นหลังกดเริ่มเกม ไม่ใช่หน้าแรก
+   ระหว่างนี้ preload ภาพฉากแรกจริงๆ ไปด้วย จะได้ไม่เข้าไปเจอจอเปล่า */
+const LOAD_TIPS = {"th": ["รหัสทุกตัวมีคำใบ้อยู่ในห้องเดียวกันเสมอ", "เสียงแรกดังเที่ยงคืน แล้วห่างกันทีละสิบห้านาที", "คืนนั้นมันตีสิบสามครั้ง คืนนี้ก็เหมือนกัน", "นับฟันเฟือง แล้วหาตัวที่ฟันเท่ากัน", "เขาซ่อนไว้ตึกละตัว ตึกละตัวเท่านั้น", "ของที่หายไปจากคนหนึ่ง มักไปโผล่ที่ที่เขาไปครั้งสุดท้าย"], "en": ["Every code has its clue in the same room. Always.", "First bell at midnight. Fifteen minutes between each.", "That night it struck thirteen. So did tonight.", "Count the teeth. Find the ones that match.", "One per building. Only one per building.", "What goes missing from a man turns up where he went last."]};
+function begin(cont){
+  const ld=$("load"), bar=$("lBar"), pct=$("lPct"), tip=$("lTip");
+  $("title").style.display="none";
+  ld.classList.add("on");
+  $("lName").textContent = L("title");
+  const first = (cont && prev) ? prev.scene : fresh().scene;
+  const bgKey = (SCENES[first] && SCENES[first].img) || "ui_title";
+  $("lBg").style.backgroundImage = "url("+(IMG[bgKey]||IMG.ui_title)+")";
+  const bi=new Image(); bi.src=IMG[bgKey]||IMG.ui_title;
+  bi.onload=()=>$("lBg").classList.add("on"); bi.onerror=()=>$("lBg").classList.add("on");
+  const tps = LOAD_TIPS[S.lang] || LOAD_TIPS.th;
+  let ti=Math.floor(Math.random()*tps.length);
+  const nextTip=()=>{ tip.style.opacity=0;
+    setTimeout(()=>{ tip.textContent="“"+tps[ti%tps.length]+"”"; tip.style.opacity=1; ti++; },420); };
+  nextTip(); const tipT=setInterval(nextTip,3400);
+  /* โหลดภาพฉากแรกไว้ล่วงหน้า */
+  let loaded=0, want=0;
+  try{ (SCENES[first].hotspots||[]).forEach(h=>{}); }catch(e){}
+  [bgKey].concat(Object.keys(IMG).slice(0,6)).forEach(k=>{ if(!IMG[k])return; want++;
+    const im=new Image(); im.onload=im.onerror=()=>loaded++; im.src=IMG[k]; });
+  let p=0;
+  const iv=setInterval(()=>{
+    const target = want ? 40+60*(loaded/want) : 100;
+    p = Math.min(100, Math.max(p+Math.random()*7+2, Math.min(p+9, target)));
+    bar.style.width=p+"%"; pct.textContent=Math.floor(p)+"%";
+    if(p>=100){ clearInterval(iv); clearInterval(tipT);
+      setTimeout(()=>{ ld.classList.remove("on"); beginNow(cont); }, 650); }
+  },230);
+}
+function beginNow(cont){
+  if(cont && prev) S = Object.assign(fresh(), prev);
+  else { wipe(); S = fresh(); }
+  started = performance.now();
+  $("title").style.display = "none";
+  ambient();
+  refreshAll();
+  goTo(S.scene);
+  if(dev) setInterval(()=>{ $("dev").textContent =
+    S.scene+" · ev "+Object.keys(S.ev).length+" · fl "+Object.keys(S.flags).length; }, 500);
+}
+$("tNew").addEventListener("click", ()=>{ sfx("click"); begin(false); });
+$("tCont").addEventListener("click", ()=>{ sfx("click"); begin(true); });
+
+addEventListener("blur", ()=>{ if(amb && AC) amb.gain.linearRampToValueAtTime(0, AC.currentTime+.5); });
+addEventListener("focus", ()=>{ if(amb && AC && S.sound) amb.gain.linearRampToValueAtTime(.16, AC.currentTime+.8); });
+addEventListener("beforeunload", save);
+setInterval(()=>{ if($("title").style.display==="none") save(); }, 15000);
+</script>
+<!-- crisp-photo:start (ระบบกลาง/crisp-photo.js) -->
+<script>
+/* crisp-photo.js — ภาพนิ่งคมตรงพิกเซลจอ สำหรับเกมภาพถ่าย (point-and-click) · 16 ต.ค. 69
+ *
+ * ปัญหาที่วัดได้ (ฟิล์มม้วนสุดท้าย ฯลฯ): ภาพ 2752×1536 ถูกเบราว์เซอร์ย่อเองบนการ์ดจอ
+ *   - ย่อแรง (หน้าต่างเล็ก/มือถือ/ภาพซูม) = แตกเป็นเม็ด-ขอบหยัก (ไม่มี mipmap)
+ *   - วางเหลื่อมเศษพิกเซล (กรอบกลางจอ, ภาพซูมในกล่อง) = นุ่ม
+ *   - createImageBitmap(resizeQuality) บน Chrome GPU ไม่สนค่า quality เลย (วัดแล้วเท่ากันทั้ง 3 ค่า)
+ * วิธีแก้: ทับ <img> ด้วยผ้าใบที่ "พิกเซลเท่าจอเป๊ะ ชิดเส้นพิกเซล" แล้วย่อภาพเองด้วย Lanczos3 ใน worker
+ *   (ไม่กินเฟรม · เกมไม่ต้องแก้อะไร · <img> เดิมยังเป็นตัวจริง ผ้าใบแค่ทับตอนพร้อม)
+ *   worker ดึงภาพเองด้วย fetch (CDN ให้ CORS · โหลดซ้ำแค่ ~390 ไบต์จากแคช)
+ *   ดึงไม่ได้ → ใช้ภาพที่ <img> โหลดแล้ว ย่อแบบ mipmap ในผ้าใบ (ยังดีกว่าเดิม)
+ *   ไม่มี worker → ย่อ mipmap บนเธรดหลัก
+ *
+ * ใช้: วาง <script> ไฟล์นี้ก่อน </body> → จับ #sceneimg กับ #cuImg ให้เอง
+ *      หรือ CrispPhoto.attach(imgElement) กับภาพอื่น
+ * ปิดทดสอบ: ?crisp=0   ดูสถิติ: CrispPhoto.stats()
+ * ภาพที่ยืดด้วย transform (title ลอยไปมา) ไม่ได้จัดการ — ใช้กับภาพที่นิ่งเท่านั้น
+ */
+(function () {
+  "use strict";
+  if (window.CrispPhoto) return;
+  var OFF = /[?&]crisp=0\b/.test(location.search);
+  var LOG = [];
+  function log(o) { LOG.push(o); if (LOG.length > 40) LOG.shift(); }
+
+  /* ---------------- worker: Lanczos3 ---------------- */
+  var WORKER_SRC = function () {
+    var cache = {};           // role -> {url, w, h, data(Uint8ClampedArray), alpha, bmp}
+    function lanczos(x) {
+      if (x === 0) return 1;
+      if (x <= -3 || x >= 3) return 0;
+      var px = Math.PI * x;
+      return 3 * Math.sin(px) * Math.sin(px / 3) / (px * px);
+    }
+    // weights for mapping dst[0..n) <- src range [s0, s0+sl) of an axis with srcLen pixels
+    function weights(n, s0, sl, srcLen) {
+      var scale = sl / n, fs = Math.max(scale, 1), sup = 3 * fs;
+      var start = new Int32Array(n), cnt = new Int32Array(n), maxc = Math.ceil(sup * 2) + 2;
+      var w = new Float32Array(n * maxc);
+      for (var i = 0; i < n; i++) {
+        var c = s0 + (i + 0.5) * scale - 0.5;
+        var a = Math.floor(c - sup) + 1, b = Math.floor(c + sup), k = 0, sum = 0;
+        if (b - a + 1 > maxc) b = a + maxc - 1;
+        start[i] = a;
+        for (var j = a; j <= b; j++, k++) { var v = lanczos((j - c) / fs); w[i * maxc + k] = v; sum += v; }
+        cnt[i] = k;
+        if (sum) for (k = 0; k < cnt[i]; k++) w[i * maxc + k] /= sum;
+      }
+      return { start: start, cnt: cnt, w: w, maxc: maxc, len: srcLen };
+    }
+    function resample(src, sw, sh, ch, sx, sy, cw, chh, W, H) {
+      var X = weights(W, sx, cw, sw), Y = weights(H, sy, chh, sh);
+      var y0 = Math.max(0, Y.start[0]), y1 = Math.min(sh - 1, Y.start[H - 1] + Y.cnt[H - 1] - 1);
+      var rows = y1 - y0 + 1, tmp = new Float32Array(rows * W * ch), x, y, k, c, i;
+      for (y = 0; y < rows; y++) {
+        var ro = (y + y0) * sw * 4, to = y * W * ch;
+        for (x = 0; x < W; x++) {
+          var st = X.start[x], n = X.cnt[x], wo = x * X.maxc, r = 0, g = 0, b = 0, a = 0;
+          for (k = 0; k < n; k++) {
+            var j = st + k; if (j < 0) j = 0; else if (j >= sw) j = sw - 1;
+            var wt = X.w[wo + k], p = ro + j * 4;
+            r += src[p] * wt; g += src[p + 1] * wt; b += src[p + 2] * wt;
+            if (ch === 4) a += src[p + 3] * wt;
+          }
+          i = to + x * ch; tmp[i] = r; tmp[i + 1] = g; tmp[i + 2] = b; if (ch === 4) tmp[i + 3] = a;
+        }
+      }
+      var out = new Uint8ClampedArray(W * H * 4);
+      for (y = 0; y < H; y++) {
+        var st2 = Y.start[y], n2 = Y.cnt[y], wo2 = y * Y.maxc, oo = y * W * 4;
+        for (x = 0; x < W; x++) {
+          var r2 = 0, g2 = 0, b2 = 0, a2 = 0, xo = x * ch;
+          for (k = 0; k < n2; k++) {
+            var jj = st2 + k; if (jj < y0) jj = y0; else if (jj > y1) jj = y1;
+            var wt2 = Y.w[wo2 + k], q = (jj - y0) * W * ch + xo;
+            r2 += tmp[q] * wt2; g2 += tmp[q + 1] * wt2; b2 += tmp[q + 2] * wt2;
+            if (ch === 4) a2 += tmp[q + 3] * wt2;
+          }
+          c = oo + x * 4; out[c] = r2; out[c + 1] = g2; out[c + 2] = b2; out[c + 3] = ch === 4 ? a2 : 255;
+        }
+      }
+      return out;
+    }
+    function decodeFull(bmp) {
+      var oc = new OffscreenCanvas(bmp.width, bmp.height), cx = oc.getContext("2d", { willReadFrequently: true });
+      cx.drawImage(bmp, 0, 0);
+      var d = cx.getImageData(0, 0, bmp.width, bmp.height).data, alpha = false;   // throws if tainted
+      for (var i = 3; i < d.length; i += 4) if (d[i] !== 255) { alpha = true; break; }
+      return { w: bmp.width, h: bmp.height, data: d, alpha: alpha };
+    }
+    function getSource(m) {
+      var c = cache[m.role];
+      if (c && c.url === m.url) return Promise.resolve(c);
+      var p;
+      if (m.bmp) p = Promise.resolve(m.bmp);
+      else p = fetch(m.url, { mode: "cors", credentials: "omit" }).then(function (r) {
+        if (!r.ok) throw new Error("http " + r.status); return r.blob();
+      }).then(function (b) { return createImageBitmap(b); });
+      return p.then(function (bmp) {
+        var s;
+        try { s = decodeFull(bmp); s.mode = "lanczos"; }
+        catch (e) { s = { w: bmp.width, h: bmp.height, mode: "mip" }; }   // tainted: keep bitmap, mipmap path
+        s.url = m.url; s.bmp = bmp;
+        var old = cache[m.role];
+        if (old && old.bmp && old.bmp !== bmp) try { old.bmp.close(); } catch (e) {}
+        if (s.data) { try { bmp.close(); } catch (e) {} s.bmp = null; }   // pixels kept, bitmap not needed
+        cache[m.role] = s;
+        return s;
+      });
+    }
+    self.onmessage = function (ev) {
+      var m = ev.data, t0 = performance.now();
+      getSource(m).then(function (s) {
+        var t1 = performance.now(), W = m.W, H = m.H, out;
+        var oc = new OffscreenCanvas(W, H), cx = oc.getContext("2d");
+        // crop is given in fractions of the source so it survives a different decoded size
+        var sx = m.cx * s.w, sy = m.cy * s.h, cw = m.cw * s.w, chh = m.ch * s.h;
+        if (s.mode === "lanczos") {
+          out = resample(s.data, s.w, s.h, s.alpha ? 4 : 3, sx, sy, cw, chh, W, H);
+          cx.putImageData(new ImageData(out, W, H), 0, 0);
+        } else {
+          cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = "high";
+          cx.drawImage(s.bmp, sx, sy, cw, chh, 0, 0, W, H);
+        }
+        var bmp = oc.transferToImageBitmap();
+        self.postMessage({ id: m.id, bmp: bmp, mode: s.mode, decodeMs: Math.round(t1 - t0),
+          resampleMs: Math.round(performance.now() - t1), src: [s.w, s.h] }, [bmp]);
+      }).catch(function (e) { self.postMessage({ id: m.id, err: String(e && e.message || e) }); });
+    };
+  };
+
+  var worker = null, seq = 0, pending = {};
+  function getWorker() {
+    if (worker !== null) return worker;
+    try {
+      var url = URL.createObjectURL(new Blob(["(" + WORKER_SRC.toString() + ")()"], { type: "text/javascript" }));
+      worker = new Worker(url);
+      worker.onmessage = function (ev) { var cb = pending[ev.data.id]; delete pending[ev.data.id]; if (cb) cb(ev.data); };
+      worker.onerror = function () { worker = false; };
+    } catch (e) { worker = false; }
+    return worker;
+  }
+  function ask(msg, transfer) {
+    return new Promise(function (res) {
+      var w = getWorker(); if (!w) return res({ err: "no worker" });
+      msg.id = ++seq; pending[msg.id] = res; w.postMessage(msg, transfer || []);
+    });
+  }
+
+  /* ---------------- per-image overlay ---------------- */
+  function pct(v, free) {   // object-position component -> fraction of free space
+    v = String(v || "50%").trim();
+    if (v === "left" || v === "top") return 0;
+    if (v === "right" || v === "bottom") return 1;
+    if (v === "center") return 0.5;
+    if (/%$/.test(v)) return parseFloat(v) / 100;
+    var px = parseFloat(v); return free ? (isFinite(px) ? px / free : 0.5) : 0.5;
+  }
+
+  function attach(img, role) {
+    if (!img || img.__crisp || OFF) return;
+    role = role || img.id || "img";
+    var cv = document.createElement("canvas");
+    cv.className = "crisp-photo";
+    cv.setAttribute("aria-hidden", "true");
+    cv.style.cssText = "position:absolute;left:0;top:0;transform-origin:0 0;image-rendering:pixelated;pointer-events:none;visibility:hidden;margin:0;padding:0;border:0;max-width:none;max-height:none";
+    img.insertAdjacentElement("afterend", cv);
+    var par = img.parentElement;
+    if (getComputedStyle(par).position === "static") par.style.position = "relative";
+    var st = { shown: false, key: "", job: 0, timer: 0, ignore: 0 };
+    img.__crisp = st;
+
+    function mirror() {
+      var cs = getComputedStyle(img);
+      cv.style.opacity = img.style.opacity !== "" ? img.style.opacity : cs.opacity;
+      cv.style.transition = cs.transition;
+      cv.style.filter = cs.filter === "none" ? "" : cs.filter;
+      cv.style.borderRadius = cs.borderRadius;
+    }
+    function hide() {
+      if (!st.shown) return;
+      st.shown = false; cv.style.visibility = "hidden";
+      if (img.style.visibility) { st.ignore++; img.style.visibility = ""; }
+    }
+    function show() {
+      st.shown = true; mirror(); cv.style.visibility = "visible";
+      if (img.style.visibility !== "hidden") { st.ignore++; img.style.visibility = "hidden"; }
+    }
+    function geometry() {
+      var cs = getComputedStyle(img);
+      if (cs.display === "none" || !img.complete || !img.naturalWidth) return null;
+      var r = img.getBoundingClientRect(); if (r.width < 2 || r.height < 2) return null;
+      var d = window.devicePixelRatio || 1;
+      // content box (inside border+padding)
+      var bl = parseFloat(cs.borderLeftWidth) + parseFloat(cs.paddingLeft), bt = parseFloat(cs.borderTopWidth) + parseFloat(cs.paddingTop);
+      var br = parseFloat(cs.borderRightWidth) + parseFloat(cs.paddingRight), bb = parseFloat(cs.borderBottomWidth) + parseFloat(cs.paddingBottom);
+      var bx = r.left + bl, by = r.top + bt, bw = r.width - bl - br, bh = r.height - bt - bb;
+      var nw = img.naturalWidth, nh = img.naturalHeight, fit = cs.objectFit || "fill";
+      var pcs = getComputedStyle(par), clips = fit === "cover" && pcs.overflow !== "visible" &&
+        Math.abs(r.width - par.clientWidth) < 1 && Math.abs(r.height - par.clientHeight) < 1;
+      var dw = bw, dh = bh;                                      // drawn image size (css px)
+      if (fit === "cover" || fit === "contain" || fit === "scale-down") {
+        var s = fit === "cover" ? Math.max(bw / nw, bh / nh) : Math.min(bw / nw, bh / nh);
+        if (fit === "scale-down") s = Math.min(s, 1);
+        dw = nw * s; dh = nh * s;
+      } else if (fit === "none") { dw = nw; dh = nh; }
+      var pos = cs.objectPosition.split(/\s+/);
+      var ix = bx + (bw - dw) * pct(pos[0], bw - dw), iy = by + (bh - dh) * pct(pos[1], bh - dh);
+      // visible part = drawn image ∩ content box, snapped to device pixels
+      var vx0 = Math.max(bx, ix), vy0 = Math.max(by, iy), vx1 = Math.min(bx + bw, ix + dw), vy1 = Math.min(by + bh, iy + dh);
+      var L = Math.round(vx0 * d), T = Math.round(vy0 * d), R = Math.round(vx1 * d), B = Math.round(vy1 * d);
+      // Chrome may land the canvas 1 device px off at odd dpr → bleed 1 px past a box the parent clips anyway
+      if (clips) { L -= 1; T -= 1; R += 1; B += 1; }
+      var W = R - L, H = B - T; if (W < 2 || H < 2) return null;
+      // source crop (fractions of natural size) that maps onto device rect [L,R)x[T,B)
+      var cx = (L / d - ix) / dw, cy = (T / d - iy) / dh, cw = (W / d) / dw, ch = (H / d) / dh;
+      // canvas position inside the positioned parent (scrolls with it)
+      var pr = par.getBoundingClientRect();
+      var left = L / d - pr.left - par.clientLeft + par.scrollLeft, top = T / d - pr.top - par.clientTop + par.scrollTop;
+      return { d: d, L: L, T: T, W: W, H: H, cx: cx, cy: cy, cw: cw, ch: ch, left: left, top: top,
+        src: img.currentSrc || img.src, key: [img.currentSrc || img.src, L, T, W, H, d].join("|") };
+    }
+    function run() {
+      st.timer = 0;
+      var g = geometry();
+      if (!g) { hide(); st.key = ""; return; }
+      if (g.key === st.key && (st.shown || st.busy === g.key)) return;   // already showing / already being made
+      if (g.key !== st.key) hide();
+      st.key = g.key; st.busy = g.key;
+      var job = ++st.job, t0 = performance.now();
+      var place = function (bmp, info) {
+        if (job !== st.job) { if (bmp && bmp.close) bmp.close(); return; }
+        st.busy = null;
+        var g2 = geometry();
+        if (!g2 || g2.key !== g.key) { if (bmp && bmp.close) bmp.close(); schedule(); return; }
+        cv.width = g.W; cv.height = g.H;
+        // CSS layout keeps 1/64 px, so W/dpr is not exact at dpr 1.25·1.5625·3 → Chrome then rescales = soft.
+        // Size the box in whole px (= device px) and shrink with a float transform instead: lands 1:1.
+        cv.style.width = g.W + "px"; cv.style.height = g.H + "px";
+        cv.style.transform = "translate(" + g.left + "px," + g.top + "px) scale(" + (1 / g.d) + ")";
+        var cx = cv.getContext("2d");
+        cx.imageSmoothingEnabled = false;
+        cx.clearRect(0, 0, g.W, g.H); cx.drawImage(bmp, 0, 0);
+        if (bmp.close) bmp.close();
+        show();
+        info.ms = Math.round(performance.now() - t0); info.role = role; info.W = g.W; info.H = g.H; info.dpr = g.d;
+        log(info);
+      };
+      var fallback = function (why) {
+        // main-thread mipmap path from the already-loaded <img>
+        createImageBitmap(img).then(function (full) {
+          var oc = document.createElement("canvas"); oc.width = g.W; oc.height = g.H;
+          var c2 = oc.getContext("2d"); c2.imageSmoothingEnabled = true; c2.imageSmoothingQuality = "high";
+          c2.drawImage(full, g.cx * full.width, g.cy * full.height, g.cw * full.width, g.ch * full.height, 0, 0, g.W, g.H);
+          full.close(); place(oc, { mode: "mip-main", why: why });
+        }).catch(function () { st.key = ""; st.busy = null; });
+      };
+      if (!getWorker()) return fallback("no worker");
+      ask({ role: role, url: g.src, W: g.W, H: g.H, cx: g.cx, cy: g.cy, cw: g.cw, ch: g.ch }).then(function (r) {
+        if (job !== st.job) { if (r.bmp) r.bmp.close(); return; }
+        if (r.bmp) return place(r.bmp, { mode: r.mode, decodeMs: r.decodeMs, resampleMs: r.resampleMs, src: r.src });
+        // worker could not fetch (no CORS / offline): hand it the decoded <img> instead
+        createImageBitmap(img).then(function (full) {
+          return ask({ role: role, url: g.src + "#img", bmp: full, W: g.W, H: g.H, cx: g.cx, cy: g.cy, cw: g.cw, ch: g.ch }, [full]);
+        }).then(function (r2) {
+          if (r2 && r2.bmp) place(r2.bmp, { mode: r2.mode, why: r.err, resampleMs: r2.resampleMs });
+          else fallback(r2 && r2.err);
+        }).catch(function (e) { fallback(String(e)); });
+      });
+    }
+    function schedule(now) {
+      if (st.timer) clearTimeout(st.timer);
+      st.timer = setTimeout(run, now ? 0 : 140);
+    }
+    // the game keeps driving <img>: src, opacity, display, filter
+    new MutationObserver(function (ms) {
+      ms = ms.filter(function (m) { if (m.attributeName === "style" && st.ignore > 0) { st.ignore--; return false; } return true; });
+      if (!ms.length) return;
+      var srcChanged = ms.some(function (m) { return m.attributeName === "src"; });
+      if (srcChanged) { st.job++; st.busy = null; hide(); st.key = ""; }
+      mirror();
+      if (getComputedStyle(img).display === "none") hide();
+      schedule(srcChanged);
+    }).observe(img, { attributes: true, attributeFilter: ["src", "style", "class", "srcset"] });
+    img.addEventListener("load", function () { schedule(true); });
+    img.addEventListener("error", function () { st.job++; st.busy = null; hide(); st.key = ""; });
+    if (window.ResizeObserver) new ResizeObserver(function () { var g = geometry(); if (!g || g.key !== st.key) { hide(); schedule(); } }).observe(img);
+    st.schedule = schedule; st.geometry = geometry; st.hide = hide;
+    ALL.push(st);
+    mirror();
+    if (img.complete && img.naturalWidth) schedule(true);
+  }
+
+  var ALL = [];
+  // geometry changed (resize / browser zoom / other screen): drop the canvas at once — the <img> shows
+  // until the new exact-size copy is ready (a stale pixelated canvas would look blocky meanwhile)
+  function relayoutAll() { ALL.forEach(function (st) { var g = st.geometry(); if (!g || g.key !== st.key) { st.hide(); st.schedule(); } }); }
+  addEventListener("resize", relayoutAll);
+  // safety net: a box can move without resize/ResizeObserver (modal re-centres, emulated viewport,
+  // events skipped while the page was not rendering) — one rect read every 0.4 s, only while a copy is showing
+  setInterval(function () { if (ALL.some(function (st) { return st.shown; })) relayoutAll(); }, 400);
+  // devicePixelRatio changes (browser zoom, dragging to another screen) — re-arm each time
+  (function watchDpr() {
+    if (!window.matchMedia) return;
+    var mq = matchMedia("(resolution: " + (window.devicePixelRatio || 1) + "dppx)");
+    var on = function () { relayoutAll(); if (mq.removeEventListener) mq.removeEventListener("change", on); watchDpr(); };
+    if (mq.addEventListener) mq.addEventListener("change", on); else if (mq.addListener) mq.addListener(on);
+  })();
+
+  window.CrispPhoto = { attach: attach, stats: function () { return LOG.slice(); }, off: OFF, relayout: relayoutAll };
+  function auto() { ["sceneimg", "cuImg"].forEach(function (id) { var el = document.getElementById(id); if (el && el.tagName === "IMG") attach(el); }); }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", auto); else auto();
+})();
+</script>
+<!-- crisp-photo:end -->
+</body>
+</html>
